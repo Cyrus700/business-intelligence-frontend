@@ -1,0 +1,236 @@
+// Single source of truth for all landing-page copy and data.
+
+export const BRAND = {
+  name: "Insightful",
+  tagline: "AI-Driven Cloud Business Intelligence",
+};
+
+export const NAV_LINKS = [
+  { label: "Product", href: "#features" },
+  { label: "How it works", href: "#how" },
+  { label: "Compare", href: "#compare" },
+  { label: "Security", href: "#security" },
+  { label: "Pricing", href: "#pricing" },
+];
+
+export const HERO = {
+  eyebrow: "Built for teams that can't wait for yesterday's reports",
+  title: ["Turn scattered data", "into decisions —", "in real time."],
+  titleAccentLine: 2, // which line gets the gradient
+  subtitle:
+    "Insightful unifies every spreadsheet, database and API into one cloud dashboard — then uses AI to forecast trends, flag anomalies and recommend your next move.",
+  primaryCta: "Start free",
+  secondaryCta: "Watch 2-min tour",
+};
+
+export const LOGOS = [
+  "NEPAL RETAIL CO.",
+  "HIMALAYAN BANK",
+  "EVEREST LOGISTICS",
+  "KTM FINTECH",
+  "POKHARA TRADING",
+  "ANNAPURNA SME",
+];
+
+export const STATS = [
+  { value: 63, suffix: "", label: "professionals surveyed" },
+  { value: 90.5, suffix: "%", label: "want an AI BI dashboard" },
+  { value: 50, prefix: "−", suffix: "%", label: "time spent on reports" },
+  { value: 100, suffix: "%", label: "asked for automated reports" },
+];
+
+export const FEATURES = [
+  {
+    icon: "chart",
+    title: "Real-time dashboards",
+    body: "Live KPIs that refresh as your business moves — no more waiting days for a static report.",
+  },
+  {
+    icon: "trend",
+    title: "Predictive analytics",
+    body: "Forecast demand, revenue and performance with ML models built on your own history.",
+  },
+  {
+    icon: "alert",
+    title: "Anomaly detection",
+    body: "Isolation-Forest powered alerts surface unusual activity before it becomes a problem.",
+  },
+  {
+    icon: "spark",
+    title: "Automated insights",
+    body: "Plain-language summaries and recommendations turn raw model output into clear next steps.",
+  },
+  {
+    icon: "pipe",
+    title: "Multi-source ETL",
+    body: "Connect CSV, Excel, PostgreSQL and REST APIs into one trusted single source of truth.",
+  },
+  {
+    icon: "lock",
+    title: "RBAC & security",
+    body: "Role-based views, JWT auth and row-level security keep sensitive data with the right people.",
+  },
+];
+
+export const STEPS = [
+  {
+    no: "01",
+    title: "Connect your data",
+    body: "Point Insightful at your spreadsheets, databases and APIs. Our ETL pipelines clean, standardise and centralise everything automatically.",
+  },
+  {
+    no: "02",
+    title: "AI analyses it",
+    body: "Predictive models, trend detection and anomaly engines run continuously over your unified warehouse — no data scientist required.",
+  },
+  {
+    no: "03",
+    title: "You decide faster",
+    body: "Insights arrive as visual KPIs, forecasts and written recommendations, delivered to role-based dashboards on any device.",
+  },
+];
+
+export const AI_PILLARS = [
+  {
+    tag: "Predict",
+    title: "See what's next",
+    body: "Regression, ensemble and time-series (ARIMA / Prophet) models project sales, demand and financials.",
+  },
+  {
+    tag: "Detect",
+    title: "Catch the unusual",
+    body: "Statistical and ML outlier detection flags risks, errors and fraud the moment they appear.",
+  },
+  {
+    tag: "Recommend",
+    title: "Know what to do",
+    body: "Every insight ships with a plain-language explanation — explainable AI you can actually trust.",
+  },
+];
+
+export const INTEGRATIONS = [
+  "CSV",
+  "Excel",
+  "PostgreSQL",
+  "REST APIs",
+  "Supabase",
+  "AWS",
+];
+
+export const COMPARISON = {
+  columns: ["Power BI", "Tableau", "Looker Studio", "Insightful"],
+  rows: [
+    { feature: "AI / ML integration", cells: ["Limited", "Limited", "None", "Core feature"] },
+    { feature: "Predictive analytics", cells: ["Basic", "Basic", "None", "Advanced"] },
+    { feature: "Anomaly detection", cells: ["Limited", "Limited", "None", "Built-in"] },
+    { feature: "Automated recommendations", cells: ["Partial", "None", "None", "Yes"] },
+    { feature: "Cost for SMEs", cells: ["Mod–High", "High", "Free (limited)", "Low, pay-as-you-go"] },
+    { feature: "Cloud-native", cells: ["Hybrid", "Hybrid", "Yes", "Yes (AWS)"] },
+    { feature: "Role-based access", cells: ["Yes", "Yes", "Limited", "Full RBAC"] },
+  ],
+};
+
+export const SECURITY = [
+  { title: "TLS everywhere", body: "Every request between client and API is encrypted in transit." },
+  { title: "JWT authentication", body: "Short-lived, time-bound tokens minimise session-hijack risk." },
+  { title: "AES-256 at rest", body: "All stored data is encrypted, useless to anyone without keys." },
+  { title: "Row-level security", body: "Supabase RLS enforces access at the database row, by role." },
+];
+
+export const PRICING = [
+  {
+    name: "Starter",
+    price: "Free",
+    period: "",
+    blurb: "For trying it out and small teams getting started.",
+    features: ["1 data source", "Core dashboards", "7-day history", "Community support"],
+    cta: "Start free",
+    featured: false,
+  },
+  {
+    name: "Growth",
+    price: "$29",
+    period: "/mo",
+    blurb: "For SMEs that run on data, day to day.",
+    features: [
+      "Unlimited data sources",
+      "Predictive analytics + anomalies",
+      "Automated insights & alerts",
+      "Full RBAC",
+      "Email support",
+    ],
+    cta: "Start 14-day trial",
+    featured: true,
+  },
+  {
+    name: "Enterprise",
+    price: "Custom",
+    period: "",
+    blurb: "For organisations with scale and compliance needs.",
+    features: ["Dedicated cloud", "SSO & audit logs", "Custom models", "SLA & onboarding"],
+    cta: "Talk to us",
+    featured: false,
+  },
+];
+
+export const TESTIMONIALS = [
+  {
+    quote:
+      "Manual reporting in Excel used to eat almost two full days of my week. Automated dashboards gave that time back.",
+    name: "Anish R.",
+    role: "Analyst, Bank · Lalitpur",
+  },
+  {
+    quote:
+      "A tool like this is exactly what lets Nepali SMEs compete internationally. The forecasting is the part that excites me.",
+    name: "Priya S.",
+    role: "BBA Student, Kathmandu University",
+  },
+  {
+    quote:
+      "Our donor data was scattered and inaccurate. Bringing it into one place changed how confidently we report.",
+    name: "Dipesh K.",
+    role: "Ops Lead, Social Welfare Org",
+  },
+];
+
+export const FAQS = [
+  {
+    q: "How is this affordable for a small business?",
+    a: "Insightful is cloud-native and pay-as-you-go — there's no upfront hardware or licensing. You only pay for what you use, and there's a free tier to start.",
+  },
+  {
+    q: "Is my data secure?",
+    a: "Yes. We use TLS in transit, AES-256 at rest, JWT authentication and database row-level security so only authorised roles see sensitive data.",
+  },
+  {
+    q: "Does it work on low bandwidth?",
+    a: "Dashboards are optimised to stay fast and legible on modest connections, and the interface is fully responsive for mobile and on-the-go access.",
+  },
+  {
+    q: "What data sources can I connect?",
+    a: "CSV and Excel files, relational databases like PostgreSQL, and external REST APIs — all unified through our ETL pipelines.",
+  },
+  {
+    q: "Do I need a data scientist?",
+    a: "No. The AI runs automatically and explains its findings in plain language, designed for non-technical business users.",
+  },
+];
+
+export const CTA = {
+  title: "Ready to decide faster?",
+  subtitle:
+    "Join the teams turning scattered data into confident, real-time decisions.",
+  cta: "Get started",
+  newsletterPlaceholder: "you@company.com",
+};
+
+export const FOOTER = {
+  columns: [
+    { title: "Product", links: ["Features", "Pricing", "Security", "Integrations"] },
+    { title: "Company", links: ["About", "Careers", "Blog", "Contact"] },
+    { title: "Resources", links: ["Docs", "Guides", "API", "Status"] },
+    { title: "Legal", links: ["Privacy", "Terms", "Data governance"] },
+  ],
+  note: "Aligned with SDG 9 — Industry, Innovation & Infrastructure.",
+};

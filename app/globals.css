@@ -1,26 +1,123 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* Brand palette — clean light SaaS */
+  --color-bg: #ffffff;
+  --color-bg-soft: #f8fafc;
+  --color-ink: #0f172a;
+  --color-ink-soft: #475569;
+  --color-ink-muted: #94a3b8;
+
+  --color-primary: #4f46e5;
+  --color-primary-600: #4338ca;
+  --color-primary-50: #eef2ff;
+  --color-accent: #10b981;
+  --color-accent-50: #ecfdf5;
+  --color-warn: #f59e0b;
+  --color-warn-50: #fffbeb;
+  --color-border: #e2e8f0;
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* Soft, layered "premium light" elevation */
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px -12px rgba(15, 23, 42, 0.12);
+  --shadow-lift: 0 1px 2px rgba(15, 23, 42, 0.05), 0 20px 40px -16px rgba(79, 70, 229, 0.22);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  body {
+    background: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+  }
+
+  ::selection {
+    background: var(--color-primary);
+    color: #fff;
+  }
+
+  *:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: 4px;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .container-page {
+    width: 100%;
+    max-width: 72rem;
+    margin-inline: auto;
+    padding-inline: 1.5rem;
+  }
+
+  /* Soft indigo→cyan→violet mesh used behind hero & CTA */
+  .mesh-glow {
+    background:
+      radial-gradient(40% 50% at 20% 20%, rgba(79, 70, 229, 0.18), transparent 70%),
+      radial-gradient(40% 50% at 80% 10%, rgba(56, 189, 248, 0.16), transparent 70%),
+      radial-gradient(45% 55% at 60% 90%, rgba(139, 92, 246, 0.14), transparent 70%);
+  }
+
+  /* Faint dot grid, masked to fade at the edges */
+  .dot-grid {
+    background-image: radial-gradient(rgba(15, 23, 42, 0.07) 1px, transparent 1px);
+    background-size: 28px 28px;
+    -webkit-mask-image: radial-gradient(70% 60% at 50% 40%, #000 0%, transparent 75%);
+    mask-image: radial-gradient(70% 60% at 50% 40%, #000 0%, transparent 75%);
+  }
+
+  .text-gradient {
+    background: linear-gradient(120deg, #4f46e5, #8b5cf6 55%, #06b6d4);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .marquee-track {
+    display: flex;
+    width: max-content;
+    animation: marquee 32s linear infinite;
+  }
+  .marquee-mask {
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  }
+}
+
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
+}
+
+/* GSAP reveal: elements start hidden to avoid FOUC, JS animates them in.
+   If JS is disabled or reduced-motion is on, .reveal-ready shows them. */
+[data-reveal] {
+  opacity: 0;
+}
+.reveal-ready [data-reveal] {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }
