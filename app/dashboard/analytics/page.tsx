@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import PageHeader from "@/components/dashboard/PageHeader";
 import Panel from "@/components/dashboard/Panel";
-import AiInsights from "@/components/dashboard/AiInsights";
-import AreaRevenue from "@/components/dashboard/charts/AreaRevenue";
-import BarCategory from "@/components/dashboard/charts/BarCategory";
-import DonutSources from "@/components/dashboard/charts/DonutSources";
-import ForecastChart from "@/components/dashboard/charts/ForecastChart";
+import CategoryBar from "@/components/dashboard/live/CategoryBar";
+import ChannelDonut from "@/components/dashboard/live/ChannelDonut";
+import RevenueExpenses from "@/components/dashboard/live/RevenueExpenses";
+import SalesExplorer from "@/components/dashboard/live/SalesExplorer";
+import RegionTable from "@/components/dashboard/live/RegionTable";
+import { RangePicker } from "@/lib/filters";
 
 export const metadata: Metadata = { title: "Analytics · Insightful" };
 
@@ -14,35 +15,31 @@ export default function AnalyticsPage() {
     <>
       <PageHeader
         title="Analytics"
-        subtitle="Deep-dive into trends, categories and forecasts."
-        action={
-          <button className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-white shadow-lift hover:bg-primary-600">
-            Export report
-          </button>
-        }
+        subtitle="Deep-dive into sales, categories and regions."
+        action={<RangePicker />}
       />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Panel title="Sales by category" subtitle="Units sold" className="lg:col-span-2">
-          <BarCategory />
+        <Panel title="Revenue by category" subtitle="Selected period" className="lg:col-span-2">
+          <CategoryBar />
         </Panel>
-        <Panel title="Traffic sources">
-          <DonutSources />
+        <Panel title="Revenue by channel" subtitle="Selected period">
+          <ChannelDonut />
         </Panel>
 
-        <Panel title="Revenue trend" subtitle="Revenue vs target" className="lg:col-span-2">
-          <AreaRevenue />
+        <Panel title="Revenue vs expenses" subtitle="Selected period" className="lg:col-span-2">
+          <RevenueExpenses />
         </Panel>
-        <Panel title="AI insights" subtitle="Auto-generated">
-          <AiInsights />
+        <Panel title="Revenue by region" subtitle="Selected period">
+          <RegionTable />
         </Panel>
 
         <Panel
-          title="Demand forecast"
-          subtitle="10-week projection with confidence band"
+          title="Sales explorer"
+          subtitle="Products → transactions drill-down"
           className="lg:col-span-3"
         >
-          <ForecastChart />
+          <SalesExplorer />
         </Panel>
       </div>
     </>

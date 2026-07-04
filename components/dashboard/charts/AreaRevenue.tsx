@@ -10,15 +10,15 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { REVENUE_SERIES } from "@/lib/dashboard-data";
+import { nprCompact } from "@/lib/api";
 import { AXIS, COLORS, GRID_STROKE, TOOLTIP_STYLE } from "./chartStyle";
 
-const fmt = (v: number) => `$${(v / 1000).toFixed(0)}k`;
+export type RevenuePoint = { period: string; revenue: number; expenses: number | null };
 
-export default function AreaRevenue() {
+export default function AreaRevenue({ data }: { data: RevenuePoint[] }) {
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <ComposedChart data={REVENUE_SERIES} margin={{ top: 10, right: 8, bottom: 0, left: -8 }}>
+      <ComposedChart data={data} margin={{ top: 10, right: 8, bottom: 0, left: -8 }}>
         <defs>
           <linearGradient id="rev" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={COLORS.primary} stopOpacity={0.25} />
@@ -26,11 +26,11 @@ export default function AreaRevenue() {
           </linearGradient>
         </defs>
         <CartesianGrid vertical={false} stroke={GRID_STROKE} strokeDasharray="4 4" />
-        <XAxis dataKey="month" {...AXIS} />
-        <YAxis {...AXIS} tickFormatter={(v) => fmt(Number(v))} width={48} />
+        <XAxis dataKey="period" {...AXIS} minTickGap={24} />
+        <YAxis {...AXIS} tickFormatter={(v) => nprCompact(Number(v))} width={72} />
         <Tooltip
           contentStyle={TOOLTIP_STYLE}
-          formatter={(v) => fmt(Number(v))}
+          formatter={(v) => nprCompact(Number(v))}
           cursor={{ stroke: COLORS.primary, strokeOpacity: 0.2 }}
         />
         <Area
@@ -43,12 +43,13 @@ export default function AreaRevenue() {
         />
         <Line
           type="monotone"
-          dataKey="target"
-          name="Target"
+          dataKey="expenses"
+          name="Expenses"
           stroke={COLORS.muted}
           strokeWidth={2}
           strokeDasharray="5 5"
           dot={false}
+          connectNulls
         />
       </ComposedChart>
     </ResponsiveContainer>

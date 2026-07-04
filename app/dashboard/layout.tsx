@@ -1,5 +1,6 @@
 import RequireAuth from "@/components/dashboard/RequireAuth";
 import DashboardChrome from "@/components/dashboard/DashboardChrome";
+import { DashboardFiltersProvider } from "@/lib/filters";
 
 export default function DashboardLayout({
   children,
@@ -8,7 +9,9 @@ export default function DashboardLayout({
 }) {
   return (
     <RequireAuth>
-      <DashboardChrome>{children}</DashboardChrome>
+      <DashboardFiltersProvider>
+        <DashboardChrome>{children}</DashboardChrome>
+      </DashboardFiltersProvider>
     </RequireAuth>
   );
 }
