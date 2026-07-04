@@ -57,7 +57,12 @@
     padding-inline: 1.5rem;
   }
 
-  /* Soft indigo→cyan→violet mesh used behind hero & CTA */
+  /* One restrained wash of brand colour behind the hero — no mesh, no grid. */
+  .hero-wash {
+    background: linear-gradient(180deg, var(--color-primary-50) 0%, transparent 60%);
+  }
+
+  /* Retained for the auth brand panel only (not used on the landing page). */
   .mesh-glow {
     background:
       radial-gradient(40% 50% at 20% 20%, rgba(79, 70, 229, 0.18), transparent 70%),
@@ -65,41 +70,11 @@
       radial-gradient(45% 55% at 60% 90%, rgba(139, 92, 246, 0.14), transparent 70%);
   }
 
-  /* Faint dot grid, masked to fade at the edges */
   .dot-grid {
     background-image: radial-gradient(rgba(15, 23, 42, 0.07) 1px, transparent 1px);
     background-size: 28px 28px;
     -webkit-mask-image: radial-gradient(70% 60% at 50% 40%, #000 0%, transparent 75%);
     mask-image: radial-gradient(70% 60% at 50% 40%, #000 0%, transparent 75%);
-  }
-
-  .text-gradient {
-    background: linear-gradient(120deg, #4f46e5, #8b5cf6 55%, #06b6d4);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-
-  .marquee-track {
-    display: flex;
-    width: max-content;
-    animation: marquee 32s linear infinite;
-  }
-  .marquee-mask {
-    -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
-    mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
-  }
-}
-
-@keyframes marquee {
-  to {
-    transform: translateX(-50%);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .marquee-track {
-    animation: none;
   }
 }
 

@@ -16,9 +16,7 @@ export default function DashboardMock({ className }: { className?: string }) {
       {/* Top bar */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-full bg-accent">
-            <span className="block h-full w-full animate-ping rounded-full bg-accent opacity-75" />
-          </span>
+          <span className="h-2.5 w-2.5 rounded-full bg-accent" />
           <span className="text-sm font-semibold text-ink">Revenue overview</span>
         </div>
         <div className="flex gap-1.5">
@@ -67,7 +65,7 @@ export default function DashboardMock({ className }: { className?: string }) {
             {bars.map((h, i) => (
               <div
                 key={i}
-                className="mock-bar flex-1 origin-bottom rounded-t bg-gradient-to-t from-primary/70 to-primary"
+                className="mock-bar flex-1 origin-bottom rounded-t bg-primary/80"
                 style={{ height: `${h}%` }}
               />
             ))}

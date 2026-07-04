@@ -32,7 +32,6 @@ export default function Comparison() {
                         : "text-ink",
                     )}
                   >
-                    {i === lastCol && "★ "}
                     {col}
                   </th>
                 ))}

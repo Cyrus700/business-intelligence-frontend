@@ -6,7 +6,7 @@ export const BRAND = {
 };
 
 export const NAV_LINKS = [
-  { label: "Product", href: "#features" },
+  { label: "Features", href: "#features" },
   { label: "How it works", href: "#how" },
   { label: "Compare", href: "#compare" },
   { label: "Security", href: "#security" },
@@ -14,23 +14,13 @@ export const NAV_LINKS = [
 ];
 
 export const HERO = {
-  eyebrow: "Built for teams that can't wait for yesterday's reports",
-  title: ["Turn scattered data", "into decisions —", "in real time."],
-  titleAccentLine: 2, // which line gets the gradient
+  eyebrow: "AI-driven cloud business intelligence",
+  title: ["One dashboard for", "every business decision."],
   subtitle:
-    "Insightful unifies every spreadsheet, database and API into one cloud dashboard — then uses AI to forecast trends, flag anomalies and recommend your next move.",
-  primaryCta: "Start free",
-  secondaryCta: "Watch 2-min tour",
+    "Insightful brings your spreadsheets, databases and APIs into a single cloud dashboard, then uses AI to forecast trends, flag anomalies and explain what to do next.",
+  primaryCta: "Get started",
+  secondaryCta: "See how it works",
 };
-
-export const LOGOS = [
-  "NEPAL RETAIL CO.",
-  "HIMALAYAN BANK",
-  "EVEREST LOGISTICS",
-  "KTM FINTECH",
-  "POKHARA TRADING",
-  "ANNAPURNA SME",
-];
 
 export const STATS = [
   { value: 63, suffix: "", label: "professionals surveyed" },
@@ -90,33 +80,6 @@ export const STEPS = [
   },
 ];
 
-export const AI_PILLARS = [
-  {
-    tag: "Predict",
-    title: "See what's next",
-    body: "Regression, ensemble and time-series (ARIMA / Prophet) models project sales, demand and financials.",
-  },
-  {
-    tag: "Detect",
-    title: "Catch the unusual",
-    body: "Statistical and ML outlier detection flags risks, errors and fraud the moment they appear.",
-  },
-  {
-    tag: "Recommend",
-    title: "Know what to do",
-    body: "Every insight ships with a plain-language explanation — explainable AI you can actually trust.",
-  },
-];
-
-export const INTEGRATIONS = [
-  "CSV",
-  "Excel",
-  "PostgreSQL",
-  "REST APIs",
-  "Supabase",
-  "AWS",
-];
-
 export const COMPARISON = {
   columns: ["Power BI", "Tableau", "Looker Studio", "Insightful"],
   rows: [
@@ -170,27 +133,6 @@ export const PRICING = [
     features: ["Dedicated cloud", "SSO & audit logs", "Custom models", "SLA & onboarding"],
     cta: "Talk to us",
     featured: false,
-  },
-];
-
-export const TESTIMONIALS = [
-  {
-    quote:
-      "Manual reporting in Excel used to eat almost two full days of my week. Automated dashboards gave that time back.",
-    name: "Anish R.",
-    role: "Analyst, Bank · Lalitpur",
-  },
-  {
-    quote:
-      "A tool like this is exactly what lets Nepali SMEs compete internationally. The forecasting is the part that excites me.",
-    name: "Priya S.",
-    role: "BBA Student, Kathmandu University",
-  },
-  {
-    quote:
-      "Our donor data was scattered and inaccurate. Bringing it into one place changed how confidently we report.",
-    name: "Dipesh K.",
-    role: "Ops Lead, Social Welfare Org",
   },
 ];
 

@@ -13,10 +13,7 @@ export default function CtaNewsletter() {
   return (
     <section id="cta" className="scroll-mt-24 py-24 md:py-32">
       <Container>
-        <div className="relative overflow-hidden rounded-3xl border border-border bg-ink px-6 py-16 text-center md:py-20">
-          <div className="mesh-glow pointer-events-none absolute inset-0 opacity-90" />
-          <div className="dot-grid pointer-events-none absolute inset-0 opacity-30" />
-
+        <div className="relative overflow-hidden rounded-3xl bg-ink px-6 py-16 text-center md:py-20">
           <div className="relative mx-auto flex max-w-2xl flex-col items-center gap-6">
             <Reveal>
               <h2 className="text-balance text-3xl font-semibold tracking-tight text-white md:text-5xl">

@@ -28,7 +28,7 @@ export default function Navbar() {
     >
       <nav className="container-page flex h-16 items-center justify-between">
         <a href="#" className="flex items-center gap-2 font-semibold text-ink">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-white shadow-lift">
+          <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-white">
             <Icon name="chart" className="h-4 w-4" />
           </span>
           {BRAND.name}
@@ -52,7 +52,7 @@ export default function Navbar() {
             Log in
           </Button>
           <Button href="/signup" variant="primary" size="md">
-            Book a demo
+            Get started
           </Button>
         </div>
 
