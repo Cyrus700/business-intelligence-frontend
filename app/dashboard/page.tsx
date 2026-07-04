@@ -3,8 +3,8 @@ import PageHeader from "@/components/dashboard/PageHeader";
 import Greeting from "@/components/dashboard/Greeting";
 import Panel from "@/components/dashboard/Panel";
 import AiInsights from "@/components/dashboard/AiInsights";
-import AnomalyFeed from "@/components/dashboard/AnomalyFeed";
-import ForecastChart from "@/components/dashboard/charts/ForecastChart";
+import LiveAnomalies from "@/components/dashboard/live/LiveAnomalies";
+import LiveForecast from "@/components/dashboard/live/LiveForecast";
 import KpiRow from "@/components/dashboard/live/KpiRow";
 import RevenueExpenses from "@/components/dashboard/live/RevenueExpenses";
 import ChannelDonut from "@/components/dashboard/live/ChannelDonut";
@@ -38,11 +38,11 @@ export default function OverviewPage() {
         </Panel>
 
         <Panel
-          title="Demand forecast"
-          subtitle="Sample preview — live model lands in Phase 4"
+          title="Revenue forecast"
+          subtitle="30-day projection from the live model"
           className="lg:col-span-2"
         >
-          <ForecastChart />
+          <LiveForecast />
         </Panel>
 
         <Panel title="AI insights" subtitle="Sample preview — live in Phase 5">
@@ -74,8 +74,16 @@ export default function OverviewPage() {
       </div>
 
       <div className="mt-4">
-        <Panel title="Anomaly alerts" subtitle="Sample preview — live detection lands in Phase 4">
-          <AnomalyFeed />
+        <Panel
+          title="Anomaly alerts"
+          subtitle="Live detection"
+          action={
+            <a href="/dashboard/alerts" className="text-sm font-medium text-primary">
+              Manage
+            </a>
+          }
+        >
+          <LiveAnomalies />
         </Panel>
       </div>
     </>
