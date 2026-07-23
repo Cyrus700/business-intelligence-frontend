@@ -7,22 +7,26 @@ import { EmptyState, PanelError, PanelSkeleton } from "./Status";
 
 export default function TransactionsTable({
   sku,
+  search,
   pageSize = 8,
   page = 1,
   onPage,
 }: {
   sku?: string;
+  search?: string;
   pageSize?: number;
   page?: number;
   onPage?: (p: number) => void;
 }) {
   const { filters } = useFilters();
-  const { data, error, loading } = useApi<Paginated<TransactionRow>>("/sales/transactions", {
+  const params: Record<string, string | number | boolean | undefined> = {
     ...apiParams(filters),
     sku,
     page,
     page_size: pageSize,
-  });
+  };
+  if (search) params.search = search;
+  const { data, error, loading } = useApi<Paginated<TransactionRow>>("/sales/transactions", params);
 
   if (error) return <PanelError message={error} />;
   if (loading || !data) return <PanelSkeleton className="h-64" />;

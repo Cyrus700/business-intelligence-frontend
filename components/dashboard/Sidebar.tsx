@@ -5,12 +5,18 @@ import { usePathname } from "next/navigation";
 import { clsx } from "@/lib/cx";
 import { BRAND } from "@/lib/content";
 import { DASH_NAV } from "@/lib/dashboard-nav";
+import { useRole, hasMinRole } from "@/lib/use-role";
 import Icon from "@/components/ui/Icon";
 
 type IconName = Parameters<typeof Icon>[0]["name"];
 
 export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const role = useRole();
+
+  const visible = DASH_NAV.filter(
+    (item) => !item.adminOnly || hasMinRole(role, "admin"),
+  );
 
   return (
     <div className="flex h-full flex-col border-r border-border bg-white">
@@ -24,7 +30,7 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       <nav className="flex-1 space-y-1 px-3 py-4">
-        {DASH_NAV.map((item) => {
+        {visible.map((item) => {
           const active =
             item.href === "/dashboard"
               ? pathname === "/dashboard"

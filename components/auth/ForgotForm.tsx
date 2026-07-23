@@ -2,20 +2,41 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useAuth } from "@/lib/auth-context";
+import { ApiError } from "@/lib/api";
 import Field from "./Field";
 import Icon from "@/components/ui/Icon";
 
 export default function ForgotForm() {
+  const { forgotPassword } = useAuth();
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setError("");
+    const data = new FormData(e.currentTarget);
+    const email = String(data.get("email") ?? "");
+
+    if (!email) {
+      setError("Please enter your email");
+      return;
+    }
+
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await forgotPassword(email);
       setSent(true);
-    }, 700);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
   }
 
   if (sent) {
@@ -39,6 +60,12 @@ export default function ForgotForm() {
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
+      {error && (
+        <div className="flex items-start gap-2.5 rounded-xl border border-warn/30 bg-warn-50 px-4 py-3 text-sm text-warn">
+          <Icon name="alert" className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
       <Field label="Email" type="email" name="email" placeholder="you@company.com" autoComplete="email" />
       <button
         type="submit"

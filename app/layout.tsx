@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import GsapProvider from "@/components/providers/GsapProvider";
+import QueryProvider from "@/components/providers/QueryProvider";
+import { AuthProvider } from "@/lib/auth-context";
 import { BRAND } from "@/lib/content";
 
 const geistSans = Geist({
@@ -51,7 +53,7 @@ export default function RootLayout({
         </noscript>
       </head>
       <body className="min-h-full flex flex-col bg-bg text-ink">
-        <GsapProvider>{children}</GsapProvider>
+        <QueryProvider><GsapProvider><AuthProvider>{children}</AuthProvider></GsapProvider></QueryProvider>
       </body>
     </html>
   );

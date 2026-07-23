@@ -4,6 +4,7 @@ import { useRef } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { EASE, prefersReducedMotion } from "@/lib/motion";
+import { useLandingData } from "@/lib/landing-api";
 import { HERO } from "@/lib/content";
 import Button from "@/components/ui/Button";
 import Icon from "@/components/ui/Icon";
@@ -11,6 +12,8 @@ import DashboardMock from "@/components/ui/DashboardMock";
 
 export default function Hero() {
   const root = useRef<HTMLDivElement>(null);
+  const { data } = useLandingData();
+  const hero = data?.hero ?? HERO;
 
   useGSAP(
     () => {
@@ -44,14 +47,14 @@ export default function Hero() {
             className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-3.5 py-1.5 text-xs font-medium text-ink-soft"
           >
             <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-            {HERO.eyebrow}
+            {hero.eyebrow}
           </span>
 
           <h1
             data-anim
             className="text-4xl font-semibold leading-[1.1] tracking-tight text-ink sm:text-5xl lg:text-6xl"
           >
-            {HERO.title.map((line, i) => (
+            {hero.title.map((line, i) => (
               <span key={i} className="block">
                 {line}
               </span>
@@ -59,16 +62,16 @@ export default function Hero() {
           </h1>
 
           <p data-anim className="max-w-xl text-lg leading-relaxed text-ink-soft">
-            {HERO.subtitle}
+            {hero.subtitle}
           </p>
 
           <div data-anim className="flex flex-col gap-3 sm:flex-row">
             <Button href="/signup" variant="primary" size="lg">
-              {HERO.primaryCta}
+              {hero.primaryCta}
               <Icon name="arrow" className="h-4 w-4" />
             </Button>
             <Button href="#how" variant="secondary" size="lg">
-              {HERO.secondaryCta}
+              {hero.secondaryCta}
             </Button>
           </div>
         </div>

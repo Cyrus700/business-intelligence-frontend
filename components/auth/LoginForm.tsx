@@ -3,30 +3,56 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { setSession, nameFromEmail } from "@/lib/auth";
+import { useAuth } from "@/lib/auth-context";
+import { ApiError } from "@/lib/api";
 import Field from "./Field";
 import SocialButtons from "./SocialButtons";
 import Icon from "@/components/ui/Icon";
 
 export default function LoginForm() {
   const router = useRouter();
+  const { login } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setError("");
     const data = new FormData(e.currentTarget);
     const email = String(data.get("email") ?? "");
+    const password = String(data.get("password") ?? "");
+
+    if (!email || !password) {
+      setError("Please fill in all fields");
+      return;
+    }
+
     setLoading(true);
-    // Mock auth — accept any credentials and start a local session.
-    setTimeout(() => {
-      setSession({ email, name: nameFromEmail(email) });
+    try {
+      await login(email, password);
       router.push("/dashboard");
-    }, 700);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
       <SocialButtons />
+
+      {error && (
+        <div className="flex items-start gap-2.5 rounded-xl border border-warn/30 bg-warn-50 px-4 py-3 text-sm text-warn">
+          <Icon name="alert" className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+
       <Field label="Email" type="email" name="email" placeholder="you@company.com" autoComplete="email" />
       <div>
         <Field label="Password" type="password" name="password" placeholder="••••••••" autoComplete="current-password" />

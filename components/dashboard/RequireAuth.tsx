@@ -2,21 +2,19 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getSession, useSession } from "@/lib/auth";
+import { useAuth } from "@/lib/auth-context";
 
-// Client-side gate for the mock session. Redirects to /login when there's no
-// session, otherwise renders the dashboard.
 export default function RequireAuth({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const session = useSession();
+  const { user, loading } = useAuth();
 
   useEffect(() => {
-    // Read localStorage directly (authoritative) so a transient null from the
-    // useSyncExternalStore hydration snapshot can't trigger a false redirect.
-    if (!getSession()) router.replace("/login");
-  }, [router]);
+    if (!loading && !user) {
+      router.replace("/login");
+    }
+  }, [loading, user, router]);
 
-  if (!session) {
+  if (loading) {
     return (
       <div className="grid min-h-screen place-items-center bg-bg-soft">
         <div className="flex flex-col items-center gap-3 text-ink-soft">
@@ -26,6 +24,8 @@ export default function RequireAuth({ children }: { children: React.ReactNode })
       </div>
     );
   }
+
+  if (!user) return null;
 
   return <>{children}</>;
 }

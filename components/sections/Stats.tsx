@@ -4,10 +4,13 @@ import { useRef } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { EASE, prefersReducedMotion } from "@/lib/motion";
+import { useLandingData } from "@/lib/landing-api";
 import { STATS } from "@/lib/content";
 
 export default function Stats() {
   const root = useRef<HTMLDivElement>(null);
+  const { data } = useLandingData();
+  const stats = data?.stats ?? STATS;
 
   useGSAP(
     () => {
@@ -42,7 +45,7 @@ export default function Stats() {
     <section className="py-20 md:py-24">
       <div ref={root} className="container-page">
         <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border shadow-card lg:grid-cols-4">
-          {STATS.map((s) => (
+          {stats.map((s) => (
             <div
               key={s.label}
               className="flex flex-col items-center gap-1.5 bg-white px-6 py-10 text-center"

@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { clsx } from "@/lib/cx";
+import { useAuth } from "@/lib/auth-context";
 import { BRAND, NAV_LINKS } from "@/lib/content";
 import Button from "@/components/ui/Button";
 import Icon from "@/components/ui/Icon";
 
 export default function Navbar() {
+  const { user } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -27,7 +29,7 @@ export default function Navbar() {
       )}
     >
       <nav className="container-page flex h-16 items-center justify-between">
-        <a href="#" className="flex items-center gap-2 font-semibold text-ink">
+        <a href="/" className="flex items-center gap-2 font-semibold text-ink">
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-white">
             <Icon name="chart" className="h-4 w-4" />
           </span>
@@ -48,12 +50,21 @@ export default function Navbar() {
         </ul>
 
         <div className="hidden items-center gap-3 md:flex">
-          <Button href="/login" variant="ghost" size="md">
-            Log in
-          </Button>
-          <Button href="/signup" variant="primary" size="md">
-            Get started
-          </Button>
+          {user ? (
+            <Button href="/dashboard" variant="primary" size="md">
+              Dashboard
+              <Icon name="arrow" className="h-4 w-4" />
+            </Button>
+          ) : (
+            <>
+              <Button href="/login" variant="ghost" size="md">
+                Log in
+              </Button>
+              <Button href="/signup" variant="primary" size="md">
+                Get started
+              </Button>
+            </>
+          )}
         </div>
 
         <button
@@ -106,12 +117,20 @@ export default function Navbar() {
             </li>
           ))}
           <li className="mt-2 flex gap-3 px-3">
-            <Button href="/login" variant="secondary" size="md" className="flex-1">
-              Log in
-            </Button>
-            <Button href="/signup" variant="primary" size="md" className="flex-1">
-              Book a demo
-            </Button>
+            {user ? (
+              <Button href="/dashboard" variant="primary" size="md" className="flex-1">
+                Dashboard
+              </Button>
+            ) : (
+              <>
+                <Button href="/login" variant="secondary" size="md" className="flex-1">
+                  Log in
+                </Button>
+                <Button href="/signup" variant="primary" size="md" className="flex-1">
+                  Get started
+                </Button>
+              </>
+            )}
           </li>
         </ul>
       </div>

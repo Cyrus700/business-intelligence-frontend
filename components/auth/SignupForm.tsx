@@ -2,30 +2,61 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { setSession } from "@/lib/auth";
+import { useAuth } from "@/lib/auth-context";
+import { ApiError } from "@/lib/api";
 import Field from "./Field";
 import SocialButtons from "./SocialButtons";
 import Icon from "@/components/ui/Icon";
 
 export default function SignupForm() {
   const router = useRouter();
+  const { signup } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setError("");
     const data = new FormData(e.currentTarget);
     const name = String(data.get("name") ?? "");
     const email = String(data.get("email") ?? "");
+    const password = String(data.get("password") ?? "");
+
+    if (!email || !password) {
+      setError("Please fill in all fields");
+      return;
+    }
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters");
+      return;
+    }
+
     setLoading(true);
-    setTimeout(() => {
-      setSession({ email, name: name || "there" });
+    try {
+      await signup(email, password, name || null);
       router.push("/dashboard");
-    }, 700);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
       <SocialButtons />
+
+      {error && (
+        <div className="flex items-start gap-2.5 rounded-xl border border-warn/30 bg-warn-50 px-4 py-3 text-sm text-warn">
+          <Icon name="alert" className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+
       <Field label="Full name" name="name" placeholder="Sairash Budhathoki" autoComplete="name" />
       <Field label="Work email" type="email" name="email" placeholder="you@company.com" autoComplete="email" />
       <Field label="Password" type="password" name="password" placeholder="At least 8 characters" autoComplete="new-password" />

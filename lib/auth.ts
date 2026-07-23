@@ -1,21 +1,54 @@
-// Lightweight client-side mock "session". No real backend — this is UI-only
-// auth so the login flow can gate the dashboard during the FYP demo.
+"use client";
 
 import { useMemo, useSyncExternalStore } from "react";
+import { apiPost, apiGet, apiPatch } from "@/lib/api";
+import type { UserProfile } from "@/lib/api";
 
-const KEY = "insightful.session";
+const SESSION_KEY = "insightful.session";
+const TOKEN_KEY = "insightful.token";
 
 export type Session = { name: string; email: string };
 
+export function setToken(token: string) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function getToken(): string | null {
+  if (typeof window === "undefined") return null;
+  const stored = window.localStorage.getItem(TOKEN_KEY);
+  if (stored) return stored;
+  return process.env.NEXT_PUBLIC_DEV_API_TOKEN ?? null;
+}
+
+export function clearToken() {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(TOKEN_KEY);
+}
+
+export function clearAll() {
+  clearSession();
+  clearToken();
+}
+
+export function decodeTokenPayload(token: string): Record<string, unknown> | null {
+  try {
+    const base64 = token.split(".")[1];
+    return JSON.parse(atob(base64));
+  } catch {
+    return null;
+  }
+}
+
 export function setSession(session: Session) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(KEY, JSON.stringify(session));
+  window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
 }
 
 export function getSession(): Session | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = window.localStorage.getItem(KEY);
+    const raw = window.localStorage.getItem(SESSION_KEY);
     return raw ? (JSON.parse(raw) as Session) : null;
   } catch {
     return null;
@@ -24,10 +57,9 @@ export function getSession(): Session | null {
 
 export function clearSession() {
   if (typeof window === "undefined") return;
-  window.localStorage.removeItem(KEY);
+  window.localStorage.removeItem(SESSION_KEY);
 }
 
-// Derive a friendly display name from an email if none was provided.
 export function nameFromEmail(email: string) {
   const local = email.split("@")[0] ?? "there";
   return local
@@ -36,9 +68,6 @@ export function nameFromEmail(email: string) {
     .trim();
 }
 
-// Reactive session read for client components. Uses useSyncExternalStore so
-// SSR renders null and the client reads localStorage without a hydration
-// mismatch or a sync setState-in-effect.
 function subscribe(cb: () => void) {
   if (typeof window === "undefined") return () => {};
   window.addEventListener("storage", cb);
@@ -48,7 +77,7 @@ function subscribe(cb: () => void) {
 export function useSession(): Session | null {
   const raw = useSyncExternalStore(
     subscribe,
-    () => (typeof window !== "undefined" ? window.localStorage.getItem(KEY) : null),
+    () => (typeof window !== "undefined" ? window.localStorage.getItem(SESSION_KEY) : null),
     () => null,
   );
   return useMemo(() => {
@@ -59,4 +88,81 @@ export function useSession(): Session | null {
       return null;
     }
   }, [raw]);
+}
+
+export function sessionFromToken(token: string): Session | null {
+  const payload = decodeTokenPayload(token);
+  if (!payload) return null;
+  const email = (payload.email as string) ?? "";
+  const name =
+    (payload.app_metadata as Record<string, unknown> | undefined)?.["name"] as string | undefined ??
+    nameFromEmail(email);
+  return { name, email };
+}
+
+// ── Real API auth functions ──────────────────────────────────────────
+
+export type LoginBody = { email: string; password: string };
+export type SignupBody = { email: string; password: string; full_name?: string | null };
+export type AuthResult = {
+  token: string;
+  user: UserProfile;
+};
+
+export async function login(body: LoginBody): Promise<AuthResult> {
+  const res = await apiPost<AuthResult>("/auth/login", body);
+  setToken(res.token);
+  setSession({ email: res.user.email, name: res.user.full_name ?? nameFromEmail(res.user.email) });
+  return res;
+}
+
+export async function signup(body: SignupBody): Promise<AuthResult> {
+  const res = await apiPost<AuthResult>("/auth/signup", body);
+  setToken(res.token);
+  setSession({ email: res.user.email, name: res.user.full_name ?? nameFromEmail(res.user.email) });
+  return res;
+}
+
+export async function forgotPassword(email: string): Promise<void> {
+  await apiPost("/auth/forgot-password", { email });
+}
+
+export async function getProfile(): Promise<UserProfile> {
+  return apiGet<UserProfile>("/auth/me");
+}
+
+export async function validateSession(): Promise<UserProfile | null> {
+  const token = getToken();
+  if (!token) return null;
+  try {
+    const profile = await getProfile();
+    setSession({ email: profile.email, name: profile.full_name ?? nameFromEmail(profile.email) });
+    return profile;
+  } catch {
+    clearAll();
+    return null;
+  }
+}
+
+export type ProfileUpdate = {
+  full_name?: string | null;
+  department?: string | null;
+};
+
+export type UserPreferences = {
+  two_factor: boolean;
+  anomaly_alerts: boolean;
+  weekly_digest: boolean;
+};
+
+export async function updateProfile(body: ProfileUpdate): Promise<UserProfile> {
+  return apiPatch<UserProfile>("/auth/me", body);
+}
+
+export async function getPreferences(): Promise<UserPreferences> {
+  return apiGet<UserPreferences>("/auth/me/preferences");
+}
+
+export async function updatePreferences(body: Partial<UserPreferences>): Promise<UserPreferences> {
+  return apiPatch<UserPreferences>("/auth/me/preferences", body);
 }

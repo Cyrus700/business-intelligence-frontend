@@ -1,9 +1,15 @@
-import { STEPS } from "@/lib/content";
+"use client";
+
 import Section from "@/components/ui/Section";
 import SectionHeading from "@/components/ui/SectionHeading";
 import Reveal from "@/components/ui/Reveal";
+import { useLandingData } from "@/lib/landing-api";
+import { STEPS } from "@/lib/content";
 
 export default function HowItWorks() {
+  const { data } = useLandingData();
+  const steps = data?.steps ?? STEPS;
+
   return (
     <Section id="how" soft>
       <SectionHeading
@@ -13,7 +19,7 @@ export default function HowItWorks() {
       />
 
       <ol className="mt-16 grid gap-6 md:grid-cols-3">
-        {STEPS.map((step, i) => (
+        {steps.map((step, i) => (
           <Reveal key={step.no} as="li" delay={i * 0.08} className="h-full">
             <div className="flex h-full flex-col gap-4 rounded-2xl border border-border bg-white p-7 shadow-card">
               <span className="grid h-11 w-11 place-items-center rounded-xl bg-primary-50 font-mono text-lg font-semibold text-primary">

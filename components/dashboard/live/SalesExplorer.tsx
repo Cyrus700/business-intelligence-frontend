@@ -8,6 +8,7 @@ import { nprCompact, useApi } from "@/lib/api";
 import type { DimensionRow } from "@/lib/api";
 import { apiParams, useFilters } from "@/lib/filters";
 import { clsx } from "@/lib/cx";
+import SearchInput from "@/components/ui/SearchInput";
 import TransactionsTable from "./TransactionsTable";
 import { EmptyState, PanelError, PanelSkeleton } from "./Status";
 
@@ -15,6 +16,12 @@ export default function SalesExplorer() {
   const { filters } = useFilters();
   const [selectedSku, setSelectedSku] = useState<string | undefined>();
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+
+  function handleSearch(v: string) {
+    setSearch(v);
+    setPage(1);
+  }
   const { data, error, loading } = useApi<DimensionRow[]>(
     "/sales/by-product",
     apiParams(filters),
@@ -26,7 +33,15 @@ export default function SalesExplorer() {
 
   return (
     <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-      <div className="overflow-x-auto">
+      <div>
+        <div className="mb-3">
+          <SearchInput
+            value={search}
+            onChange={handleSearch}
+            placeholder="Search products…"
+          />
+        </div>
+        <div className="overflow-x-auto">
         <table className="w-full min-w-[420px] text-left text-sm">
           <thead>
             <tr className="text-xs uppercase tracking-wide text-ink-muted">
@@ -61,11 +76,12 @@ export default function SalesExplorer() {
           Click a product to drill into its transactions.
         </p>
       </div>
+      </div>
       <div>
         <p className="mb-2 text-sm font-medium text-ink">
           {selectedSku ? `Transactions — ${selectedSku}` : "All transactions"}
         </p>
-        <TransactionsTable sku={selectedSku} page={page} onPage={setPage} pageSize={8} />
+        <TransactionsTable sku={selectedSku} search={search} page={page} onPage={setPage} pageSize={8} />
       </div>
     </div>
   );

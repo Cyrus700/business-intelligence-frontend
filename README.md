@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Business Intelligence Frontend
 
-## Getting Started
+Next.js dashboard for the BI platform.
 
-First, run the development server:
+## Prerequisites
+
+- **Bun** (`bun --version`) — install: `curl -fsSL https://bun.sh/install | bash`
+- **Backend running** on `http://localhost:8000`
+
+## Quick start
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
+# 1. Install dependencies & create env
+bun install
+cp .env.example .env.local
+
+# 2. Inject dev token from backend
+# Run this in the backend directory first:
+#   cd ../business-intelligence-backend
+#   uv run python scripts/setup.py --quick
+# Then copy the token from backend/.dev-token:
+#   NEXT_PUBLIC_DEV_API_TOKEN=<paste-token-here>
+#
+# Or let the setup script do it automatically:
+bun run setup
+
+# 3. Start dev server
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open **http://localhost:3000** in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Commands
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+bun dev          # start dev server
+bun run setup    # setup env + install deps
+bun run build    # production build
+```
 
-## Learn More
+## Env variables
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Variable | Default | Description |
+|---|---|---|
+| `NEXT_PUBLIC_API_URL` | `http://localhost:8000/api/v1` | Backend API URL |
+| `NEXT_PUBLIC_DEV_API_TOKEN` | — | Dev JWT from backend setup |

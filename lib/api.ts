@@ -1,21 +1,11 @@
 // Typed client for the BI backend API (business-intelligence-backend).
-// Auth: bearer token from localStorage ("insightful.token"), falling back to
-// NEXT_PUBLIC_DEV_API_TOKEN — an interim bridge until Phase 6 wires Supabase
-// Auth end-to-end (docs/plan/phase-6-security-rbac.md).
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { getToken } from "@/lib/auth";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
-
-export function getToken(): string | null {
-  if (typeof window !== "undefined") {
-    const stored = window.localStorage.getItem("insightful.token");
-    if (stored) return stored;
-  }
-  return process.env.NEXT_PUBLIC_DEV_API_TOKEN ?? null;
-}
 
 export class ApiError extends Error {
   constructor(
@@ -26,6 +16,32 @@ export class ApiError extends Error {
   }
 }
 
+// ── Query key factory ────────────────────────────────────────────
+// Centralised so mutations can invalidate by prefix.
+export const queryKeys = {
+  kpis: { all: ["kpis"] as const, summary: (p?: object) => ["kpis", "summary", p] as const, timeseries: (m: string, p?: object) => ["kpis", "timeseries", m, p] as const },
+  sales: { all: ["sales"] as const, byProduct: (p?: object) => ["sales", "by-product", p] as const, byCategory: (p?: object) => ["sales", "by-category", p] as const, byChannel: (p?: object) => ["sales", "by-channel", p] as const, byRegion: (p?: object) => ["sales", "by-region", p] as const, transactions: (p?: object) => ["sales", "transactions", p] as const },
+  finance: { all: ["finance"] as const, expenses: (p?: object) => ["finance", "expenses", p] as const, pnl: (p?: object) => ["finance", "pnl", p] as const },
+  inventory: { all: ["inventory"] as const, levels: (p?: object) => ["inventory", "levels", p] as const },
+  forecasts: { all: ["forecasts"] as const, list: (p?: object) => ["forecasts", "list", p] as const, accuracy: (p?: object) => ["forecasts", "accuracy", p] as const },
+  anomalies: { all: ["anomalies"] as const, list: (p?: object) => ["anomalies", "list", p] as const },
+  trends: { all: ["trends"] as const, list: (p?: object) => ["trends", "list", p] as const },
+  insights: { all: ["insights"] as const, list: (p?: object) => ["insights", "list", p] as const },
+  recommendations: { all: ["recommendations"] as const, list: () => ["recommendations", "list"] as const },
+  dataSources: { all: ["data-sources"] as const, list: () => ["data-sources", "list"] as const },
+  etlJobs: { all: ["etl-jobs"] as const, list: () => ["etl-jobs", "list"] as const },
+  alerts: { all: ["alerts"] as const, rules: (p?: object) => ["alerts", "rules", p] as const },
+  notifications: { all: ["notifications"] as const, list: (p?: object) => ["notifications", "list", p] as const },
+  users: { all: ["users"] as const, list: () => ["users", "list"] as const, detail: (id: string) => ["users", "detail", id] as const },
+};
+
+// ── Raw fetch helpers (used by useQuery + useMutation) ───────────
+
+async function authHeaders(): Promise<Record<string, string>> {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export async function apiGet<T>(
   path: string,
   params?: Record<string, string | number | boolean | undefined>,
@@ -34,10 +50,8 @@ export async function apiGet<T>(
   for (const [k, v] of Object.entries(params ?? {})) {
     if (v !== undefined && v !== "") url.searchParams.set(k, String(v));
   }
-  const token = getToken();
-  const res = await fetch(url, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
+  const headers = await authHeaders();
+  const res = await fetch(url, { headers });
   if (!res.ok) {
     const body = await res.json().catch(() => ({ detail: res.statusText }));
     throw new ApiError(res.status, String(body.detail ?? res.statusText));
@@ -45,39 +59,97 @@ export async function apiGet<T>(
   return res.json() as Promise<T>;
 }
 
-type ApiState<T> = { key: string; data: T | null; error: string | null };
+export async function apiPost<T>(path: string, body: unknown): Promise<T> {
+  const headers = await authHeaders();
+  const res = await fetch(`${BASE}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...headers },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const b = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new ApiError(res.status, String(b.detail ?? res.statusText));
+  }
+  return res.json() as Promise<T>;
+}
 
-/** Fetch-on-mount hook with loading/error state; refetches when params change. */
+export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
+  const headers = await authHeaders();
+  const res = await fetch(`${BASE}${path}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...headers },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const b = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new ApiError(res.status, String(b.detail ?? res.statusText));
+  }
+  return res.json() as Promise<T>;
+}
+
+// ── useApi hook (backed by TanStack Query) ───────────────────────
+// Replaces the old useState+useEffect implementation.
+// All existing consumers get caching, dedup, retry, and refetch for free.
+
 export function useApi<T>(
   path: string,
   params?: Record<string, string | number | boolean | undefined>,
+  queryKey?: unknown[],
+  retry?: number | boolean,
 ) {
-  const key = JSON.stringify([path, params]);
-  const [state, setState] = useState<ApiState<T>>({ key: "", data: null, error: null });
+  const maxRetries = typeof retry === "number" ? retry : retry === true ? 2 : 0;
+  const key = queryKey ?? [path, params];
+  const { data, error, isLoading } = useQuery<T>({
+    queryKey: key,
+    queryFn: () => apiGet<T>(path, params),
+    staleTime: 30_000,
+    retry: (failureCount, err) => {
+      if (failureCount >= maxRetries) return false;
+      if (err instanceof ApiError && err.status < 500) return false;
+      return true;
+    },
+  });
 
-  useEffect(() => {
-    let cancelled = false;
-    apiGet<T>(path, params)
-      .then((data) => {
-        if (!cancelled) setState({ key, data, error: null });
-      })
-      .catch((e: unknown) => {
-        if (!cancelled)
-          setState({ key, data: null, error: e instanceof Error ? e.message : "Request failed" });
-      });
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
-
-  const current = state.key === key;
   return {
-    data: current ? state.data : null,
-    error: current ? state.error : null,
-    loading: !current,
+    data: data ?? null,
+    error: error ? (error instanceof ApiError ? error.message : "Request failed") : null,
+    loading: isLoading,
   };
 }
+
+// ── user types (mirror app/schemas/identity.py) ────────────────
+
+export type UserProfile = {
+  id: string;
+  email: string;
+  full_name: string | null;
+  role: "admin" | "manager" | "analyst";
+  department: string | null;
+  is_active: boolean;
+  created_at: string;
+};
+
+export type PaginatedUsers = {
+  items: UserProfile[];
+  total: number;
+  page: number;
+  page_size: number;
+};
+
+export type UserCreateBody = {
+  email: string;
+  password: string;
+  full_name?: string | null;
+  role: "admin" | "manager" | "analyst";
+  department?: string | null;
+};
+
+export type UserUpdateBody = {
+  full_name?: string | null;
+  role?: "admin" | "manager" | "analyst";
+  department?: string | null;
+  is_active?: boolean | null;
+};
 
 // ---- response shapes (mirror app/schemas/analytics.py) ----
 
@@ -125,7 +197,6 @@ export type InventoryRow = {
 
 // ---- formatting ----
 
-/** NPR with Nepali-style digit grouping (1,23,45,678). */
 export function npr(value: number): string {
   return `रु ${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(value)}`;
 }
@@ -136,4 +207,202 @@ export function nprCompact(value: number): string {
   if (abs >= 1e5) return `रु ${(value / 1e5).toFixed(1)} L`;
   if (abs >= 1e3) return `रु ${(value / 1e3).toFixed(0)}k`;
   return npr(value);
+}
+
+// ── AI types ──────────────────────────────────────────────────────
+
+export type AIChatRequest = {
+  conversation_id?: string;
+  message: string;
+  context?: Record<string, unknown>;
+};
+
+export type AIChatResponse = {
+  conversation_id: string;
+  reply: string;
+};
+
+export type AIConversation = {
+  id: string;
+  title: string;
+  created_at: string;
+  message_count: number;
+};
+
+export type AIMessage = {
+  id: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  created_at: string;
+};
+
+export type AIAnalyzeRequest = {
+  question: string;
+  data_context?: Record<string, unknown>;
+};
+
+export type AIAnalyzeResponse = {
+  answer: string;
+  suggestions: string[];
+};
+
+export type AIInsight = {
+  title: string;
+  body: string;
+  type: string;
+  priority: string;
+};
+
+// ── AI API functions ──────────────────────────────────────────────
+
+export async function aiChat(body: AIChatRequest): Promise<AIChatResponse> {
+  return apiPost<AIChatResponse>("/ai/chat", body);
+}
+
+export async function aiAnalyze(body: AIAnalyzeRequest): Promise<AIAnalyzeResponse> {
+  return apiPost<AIAnalyzeResponse>("/ai/analyze", body);
+}
+
+export async function getConversations(): Promise<AIConversation[]> {
+  return apiGet<AIConversation[]>("/ai/conversations");
+}
+
+export async function getConversationMessages(convId: string): Promise<AIMessage[]> {
+  return apiGet<AIMessage[]>(`/ai/conversations/${convId}/messages`);
+}
+
+export async function getAIInsights(scope?: string): Promise<AIInsight[]> {
+  return apiGet<AIInsight[]>("/ai/insights", scope ? { scope } : undefined);
+}
+
+// ── Data Integration types ─────────────────────────────────────────
+
+export type DataSource = {
+  id: string;
+  name: string;
+  kind: "csv_upload" | "excel_upload" | "rest_api" | "postgres";
+  target_domain: "sales" | "finance" | "inventory";
+  config: Record<string, unknown>;
+  schedule_cron: string | null;
+  status: string;
+  created_at: string;
+};
+
+export type UploadResult = {
+  id: string;
+  file_name: string;
+  status: string;
+  row_count: number | null;
+  error_report: Record<string, unknown> | null;
+  created_at: string;
+  etl_job_id: string | null;
+};
+
+export type EtlJob = {
+  id: string;
+  data_source_id: string | null;
+  trigger: string;
+  status: string;
+  started_at: string;
+  finished_at: string | null;
+  rows_in: number | null;
+  rows_loaded: number | null;
+  rows_rejected: number | null;
+  log: Record<string, unknown> | null;
+};
+
+// ── Data Integration API functions ──────────────────────────────────
+
+export async function uploadFile(
+  file: File,
+  domain: string,
+  dataSourceId?: string,
+): Promise<UploadResult> {
+  const token = getToken();
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const form = new FormData();
+  form.append("file", file);
+  form.append("domain", domain);
+  if (dataSourceId) form.append("data_source_id", dataSourceId);
+
+  const res = await fetch(`${BASE}/uploads`, { method: "POST", headers, body: form });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new ApiError(res.status, String(body.detail ?? res.statusText));
+  }
+  return res.json() as Promise<UploadResult>;
+}
+
+// ── P&L / Finance ────────────────────────────────────────────────
+
+export type PnlRow = {
+  month: string;
+  revenue: number;
+  expenses: number;
+  gross_margin: number;
+  net: number;
+};
+
+export async function getPnL(params?: Record<string, string | number | boolean | undefined>): Promise<PnlRow[]> {
+  return apiGet<PnlRow[]>("/finance/pnl", params);
+}
+
+// ── Alert rules ──────────────────────────────────────────────────
+
+export type AlertRuleOut = {
+  id: string;
+  name: string;
+  metric: string;
+  condition: string;
+  threshold: number | null;
+  window_days: number;
+  channels: Record<string, unknown>;
+  roles_notified: string[];
+  is_active: boolean;
+  created_at: string;
+};
+
+export async function getAlertRules(): Promise<AlertRuleOut[]> {
+  return apiGet<AlertRuleOut[]>("/alert-rules");
+}
+
+// ── Notifications ────────────────────────────────────────────────
+
+export type NotificationOut = {
+  id: string;
+  title: string;
+  body: string | null;
+  is_read: boolean;
+  created_at: string;
+};
+
+export async function getNotifications(unread_only?: boolean): Promise<NotificationOut[]> {
+  return apiGet<NotificationOut[]>("/notifications", { unread_only: unread_only ?? undefined });
+}
+
+// ── Reports ──────────────────────────────────────────────────────
+
+export type ReportOut = {
+  id: string;
+  report_type: string;
+  period_start: string;
+  period_end: string;
+  format: string;
+  created_at: string;
+};
+
+export type ReportRequest = {
+  period_start: string;
+  period_end: string;
+  format: "pdf" | "xlsx";
+};
+
+export async function getReports(): Promise<ReportOut[]> {
+  return apiGet<ReportOut[]>("/reports");
+}
+
+export async function generateReport(body: ReportRequest): Promise<ReportOut> {
+  return apiPost<ReportOut>("/reports/generate", body);
 }

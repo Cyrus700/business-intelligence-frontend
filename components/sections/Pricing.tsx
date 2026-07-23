@@ -1,12 +1,18 @@
+"use client";
+
 import Section from "@/components/ui/Section";
 import SectionHeading from "@/components/ui/SectionHeading";
 import Reveal from "@/components/ui/Reveal";
 import Button from "@/components/ui/Button";
 import Icon from "@/components/ui/Icon";
 import { clsx } from "@/lib/cx";
+import { useLandingData } from "@/lib/landing-api";
 import { PRICING } from "@/lib/content";
 
 export default function Pricing() {
+  const { data } = useLandingData();
+  const tiers = data?.pricing ?? PRICING;
+
   return (
     <Section id="pricing" soft>
       <SectionHeading
@@ -16,7 +22,7 @@ export default function Pricing() {
       />
 
       <div className="mt-16 grid items-stretch gap-6 lg:grid-cols-3">
-        {PRICING.map((tier, i) => (
+        {tiers.map((tier, i) => (
           <Reveal key={tier.name} delay={i * 0.08} className="h-full">
             <div
               className={clsx(

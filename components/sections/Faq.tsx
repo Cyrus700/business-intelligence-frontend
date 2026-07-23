@@ -4,11 +4,14 @@ import { useRef, useState } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { clsx } from "@/lib/cx";
+import { useLandingData } from "@/lib/landing-api";
 import { FAQS } from "@/lib/content";
 import Section from "@/components/ui/Section";
 import SectionHeading from "@/components/ui/SectionHeading";
 
 export default function Faq() {
+  const { data } = useLandingData();
+  const items = data?.faqs ?? FAQS;
   const [open, setOpen] = useState<number | null>(0);
   const root = useRef<HTMLDivElement>(null);
 
@@ -37,7 +40,7 @@ export default function Faq() {
         />
 
         <div ref={root} className="mt-12 flex flex-col gap-3">
-          {FAQS.map((item, i) => {
+          {items.map((item, i) => {
             const isOpen = open === i;
             return (
               <div
