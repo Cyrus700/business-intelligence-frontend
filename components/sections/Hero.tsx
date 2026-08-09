@@ -12,11 +12,11 @@ import {
   splitChars,
   tilt,
 } from "@/lib/motion";
-import { useLandingData, useLandingLive, modelAccuracyPct } from "@/lib/landing-api";
+import { useLandingData, useLandingLive } from "@/lib/landing-api";
 import { HERO } from "@/lib/content";
-import { nprCompact } from "@/lib/api";
 import Button from "@/components/ui/Button";
 import Icon from "@/components/ui/Icon";
+import Skeleton from "@/components/ui/Skeleton";
 import LiveDashboard from "@/components/ui/LiveDashboard";
 
 export default function Hero() {
@@ -25,20 +25,20 @@ export default function Hero() {
   const { data: live } = useLandingLive();
   const hero = data?.hero ?? HERO;
 
-  const accuracy = modelAccuracyPct(live);
-  // The three proof points under the CTAs — all real, all from the warehouse.
+  // The three proof points under the CTAs — real platform-scale aggregates,
+  // nothing business-critical (no revenue, orders or margins).
   const proof = [
     {
-      value: live ? live.totals.records_unified.toLocaleString("en-IN") : "—",
+      value: live ? live.totals.records_unified.toLocaleString("en-IN") : null,
       label: "rows unified",
     },
     {
-      value: live ? `${live.totals.forecast_points}` : "—",
-      label: "forecast points live",
+      value: live ? `${live.totals.data_sources}` : null,
+      label: "data sources connected",
     },
     {
-      value: accuracy != null ? `${accuracy}%` : "—",
-      label: `${live?.model?.model_type ?? "model"} accuracy`,
+      value: live ? `${live.pipeline.success_rate_pct}%` : null,
+      label: "ETL success rate",
     },
   ];
 
@@ -50,7 +50,7 @@ export default function Hero() {
 
       if (reduce) {
         gsap.set(
-          q("[data-anim], [data-line], [data-mock], [data-eyebrow], [data-hero-sub], [data-hero-ctas], [data-proof], [data-chip]"),
+          q("[data-anim], [data-line], [data-mock], [data-eyebrow], [data-hero-sub], [data-hero-ctas], [data-proof]"),
           { opacity: 1, y: 0, x: 0, scale: 1, yPercent: 0 },
         );
         return;
@@ -178,27 +178,10 @@ export default function Hero() {
         stagger: 0.07,
       });
 
-      const line = root.current.querySelector<SVGPathElement>(".chart-line");
-      if (line) {
-        const len = line.getTotalLength();
-        tl.fromTo(
-          line,
-          { strokeDashoffset: len, strokeDasharray: len },
-          { strokeDashoffset: 0, duration: 1.3, ease: EASE.inOut },
-          "-=0.2",
-        );
-      }
-      tl.from(q(".chart-area"), { opacity: 0, duration: 0.8 }, "-=1.1");
-      tl.from(q(".chart-band, .chart-forecast"), { opacity: 0, duration: 0.7 }, "-=0.6");
       tl.from(
         q("[data-dim-bar]"),
         { scaleX: 0, transformOrigin: "left", duration: 0.7, stagger: 0.08 },
         "-=0.6",
-      );
-      tl.from(
-        q("[data-chip]"),
-        { scale: 0.8, opacity: 0, duration: DUR.fast, ease: EASE.pop, stagger: 0.1 },
-        "-=0.5",
       );
     },
     { scope: root, dependencies: [live] },
@@ -234,9 +217,14 @@ export default function Hero() {
             className="surface-glass inline-flex items-center gap-2.5 rounded-full px-3.5 py-1.5 text-xs font-medium text-ink-soft"
           >
             <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-accent text-accent" />
-            {live
-              ? `Live · ${live.totals.records_unified.toLocaleString("en-IN")} rows across ${live.totals.data_sources} sources`
-              : hero.eyebrow}
+            {live ? (
+              `Live · ${live.totals.records_unified.toLocaleString("en-IN")} rows across ${live.totals.data_sources} sources`
+            ) : (
+              <span className="inline-flex items-center gap-2">
+                Connecting to the warehouse
+                <Skeleton className="h-3 w-24" />
+              </span>
+            )}
           </span>
 
           <h1 className="text-4xl font-semibold leading-[1.08] tracking-tight text-ink sm:text-5xl lg:text-[3.85rem]">
@@ -277,7 +265,7 @@ export default function Hero() {
             </span>
           </div>
 
-          {/* Proof strip — real warehouse figures, not marketing rounding. */}
+          {/* Proof strip — real platform-scale figures, not marketing rounding. */}
           <dl
             data-proof
             className="mt-2 flex flex-wrap items-center gap-x-8 gap-y-4 border-t border-border/70 pt-6"
@@ -285,7 +273,7 @@ export default function Hero() {
             {proof.map((p) => (
               <div key={p.label}>
                 <dt className="font-mono text-xl font-semibold tabular-nums text-ink">
-                  {p.value}
+                  {p.value ?? <Skeleton className="h-6 w-20" />}
                 </dt>
                 <dd className="mt-0.5 text-xs text-ink-muted">{p.label}</dd>
               </div>
@@ -299,36 +287,6 @@ export default function Hero() {
               <div data-tilt className="w-full [transform-style:preserve-3d]">
                 <LiveDashboard live={live} className="shadow-hero" />
               </div>
-
-              {/* Floating chips — real derived numbers, positioned off the panel. */}
-              {live && (
-                <>
-                  <div
-                    data-chip
-                    className="surface-glass absolute -left-4 top-24 hidden rounded-xl px-3.5 py-2.5 shadow-card lg:block"
-                  >
-                    <p className="text-[10px] font-medium text-ink-muted">
-                      Next 30d forecast
-                    </p>
-                    <p className="font-mono text-sm font-semibold text-violet">
-                      {live.forecast_series.length
-                        ? nprCompact(live.forecast_series[0].yhat)
-                        : "—"}
-                    </p>
-                  </div>
-                  <div
-                    data-chip
-                    className="surface-glass absolute -right-3 bottom-28 hidden rounded-xl px-3.5 py-2.5 shadow-card lg:block"
-                  >
-                    <p className="text-[10px] font-medium text-ink-muted">
-                      ETL success rate
-                    </p>
-                    <p className="font-mono text-sm font-semibold text-accent">
-                      {live.pipeline.success_rate_pct}%
-                    </p>
-                  </div>
-                </>
-              )}
             </div>
           </div>
         </div>

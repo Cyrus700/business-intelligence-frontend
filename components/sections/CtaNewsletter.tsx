@@ -7,7 +7,7 @@ import { clsx } from "@/lib/cx";
 import { EASE, prefersReducedMotion } from "@/lib/motion";
 import { CTA } from "@/lib/content";
 import { useLandingLive } from "@/lib/landing-api";
-import { nprCompact } from "@/lib/api";
+import Skeleton from "@/components/ui/Skeleton";
 import Container from "@/components/ui/Container";
 import Reveal from "@/components/ui/Reveal";
 import Icon from "@/components/ui/Icon";
@@ -15,7 +15,7 @@ import Icon from "@/components/ui/Icon";
 export default function CtaNewsletter() {
   const [submitted, setSubmitted] = useState(false);
   const root = useRef<HTMLDivElement>(null);
-  const { data: live } = useLandingLive();
+  const { data: live, loading } = useLandingLive();
 
   useGSAP(
     () => {
@@ -129,17 +129,20 @@ export default function CtaNewsletter() {
             </p>
 
             {/* Close on the real scale of what is already running. */}
-            {live && (
+            {live ? (
               <dl className="mt-6 grid w-full grid-cols-3 gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 text-center">
                 {[
                   {
                     v: live.totals.records_unified.toLocaleString("en-IN"),
                     l: "rows unified",
                   },
-                  { v: nprCompact(live.totals.revenue), l: "revenue analysed" },
                   {
                     v: `${live.pipeline.success_rate_pct}%`,
                     l: "ETL success rate",
+                  },
+                  {
+                    v: `${live.totals.data_sources}`,
+                    l: "data sources connected",
                   },
                 ].map((s) => (
                   <div key={s.l} className="bg-ink/60 px-3 py-4 backdrop-blur">
@@ -150,7 +153,16 @@ export default function CtaNewsletter() {
                   </div>
                 ))}
               </dl>
-            )}
+            ) : loading ? (
+              <div className="mt-6 grid w-full grid-cols-3 gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 text-center">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="bg-ink/60 px-3 py-4 backdrop-blur">
+                    <Skeleton className="mx-auto h-5 w-16" />
+                    <Skeleton className="mx-auto mt-2 h-3 w-24" />
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </div>
         </div>
       </Container>

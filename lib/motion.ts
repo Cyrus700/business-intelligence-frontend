@@ -33,8 +33,45 @@ export const revealTrigger = (el: Element) => ({
   once: true,
 });
 
+// ── Motion preference ────────────────────────────────────────────
+// Every animated section calls prefersReducedMotion() and skips straight to
+// the final state when it returns true. That is the correct default: an OS
+// "Reduce motion" setting must be honoured.
+//
+// It also means a developer with Reduce motion enabled sees no animation
+// anywhere and reasonably concludes GSAP is broken. MOTION_OVERRIDE_KEY is an
+// explicit, per-browser opt-out of that behaviour — never on by default, so
+// real visitors always get their own preference respected.
+//
+//   ?motion=on    force animations on in this browser (persists)
+//   ?motion=auto  go back to following the OS setting
+
+export const MOTION_OVERRIDE_KEY = "insightful:motion";
+
+export type MotionOverride = "on" | "auto";
+
+export function getMotionOverride(): MotionOverride {
+  if (typeof window === "undefined") return "auto";
+  try {
+    return window.localStorage.getItem(MOTION_OVERRIDE_KEY) === "on" ? "on" : "auto";
+  } catch {
+    return "auto"; // private mode / storage disabled
+  }
+}
+
+export function setMotionOverride(value: MotionOverride): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (value === "on") window.localStorage.setItem(MOTION_OVERRIDE_KEY, "on");
+    else window.localStorage.removeItem(MOTION_OVERRIDE_KEY);
+  } catch {
+    /* storage unavailable — the override simply won't persist */
+  }
+}
+
 export function prefersReducedMotion() {
   if (typeof window === "undefined") return false;
+  if (getMotionOverride() === "on") return false;
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 

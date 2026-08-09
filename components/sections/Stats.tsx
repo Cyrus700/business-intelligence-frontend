@@ -10,12 +10,12 @@ import {
   prefersReducedMotion,
   revealTrigger,
 } from "@/lib/motion";
-import { modelAccuracyPct, useLandingLive } from "@/lib/landing-api";
-import { nprCompact } from "@/lib/api";
+import { useLandingLive } from "@/lib/landing-api";
+import Skeleton from "@/components/ui/Skeleton";
 
 type Cell = {
   label: string;
-  /** Numeric target for the count-up; null renders a static value instead. */
+  /** Numeric target for the count-up; null renders a skeleton instead. */
   to: number | null;
   decimals?: number;
   prefix?: string;
@@ -27,12 +27,12 @@ type Cell = {
 
 export default function Stats() {
   const root = useRef<HTMLDivElement>(null);
-  const { data: live } = useLandingLive();
+  const { data: live, loading } = useLandingLive();
 
-  const accuracy = modelAccuracyPct(live);
   const t = live?.totals;
+  const p = live?.pipeline;
 
-  // Every figure here is a live warehouse aggregate — no survey numbers.
+  // Platform-scale figures only — no revenue, orders or margins.
   const cells: Cell[] = [
     {
       label: "Rows unified",
@@ -41,29 +41,23 @@ export default function Stats() {
       note: `sales, finance & inventory across ${t?.data_sources ?? "—"} sources`,
     },
     {
-      label: "Revenue analysed",
-      to: t?.revenue ?? null,
-      format: (v) => nprCompact(v),
-      note: live?.coverage.from
-        ? `since ${live.coverage.from}`
-        : "across the full warehouse",
+      label: "Data sources",
+      to: t?.data_sources ?? null,
+      format: (v) => Math.round(v).toLocaleString("en-IN"),
+      note: "CSV · Excel · PostgreSQL · REST APIs",
     },
     {
-      label: "Forecast accuracy",
-      to: accuracy,
+      label: "ETL success rate",
+      to: p?.success_rate_pct ?? null,
       decimals: 1,
       suffix: "%",
-      note: `${live?.model?.model_type ?? "best"} model on ${
-        live?.model?.training_rows?.toLocaleString("en-IN") ?? "—"
-      } training rows`,
+      note: `${t?.etl_jobs ?? "—"} ETL runs processed`,
     },
     {
-      label: "KPI points computed",
-      to: t?.kpi_points ?? null,
+      label: "AI insights written",
+      to: t?.insights ?? null,
       format: (v) => Math.round(v).toLocaleString("en-IN"),
-      note: `${t?.forecast_points ?? "—"} forecast points, ${
-        t?.anomalies_open ?? "—"
-      } open anomalies`,
+      note: `${t?.forecast_points ?? "—"} forecast points`,
     },
   ];
 
@@ -134,7 +128,7 @@ export default function Stats() {
               <p className="font-mono text-4xl font-semibold tracking-tight text-primary md:text-[2.75rem]">
                 {c.prefix ?? ""}
                 {c.to === null ? (
-                  <span className="text-ink-muted">—</span>
+                  <Skeleton className="mx-auto h-8 w-24" />
                 ) : (
                   <span
                     data-counter
@@ -149,7 +143,13 @@ export default function Stats() {
                 {c.suffix ?? ""}
               </p>
               <p className="text-sm font-medium text-ink">{c.label}</p>
-              <p className="mt-1 text-xs leading-relaxed text-ink-muted">{c.note}</p>
+              <p className="mt-1 text-xs leading-relaxed text-ink-muted">
+                {loading && c.to === null ? (
+                  <Skeleton className="mx-auto h-3 w-40" />
+                ) : (
+                  c.note
+                )}
+              </p>
             </div>
           ))}
         </div>

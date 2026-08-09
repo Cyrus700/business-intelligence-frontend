@@ -1,31 +1,29 @@
 "use client";
 
 import { useRef } from "react";
-import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { marquee } from "@/lib/motion";
 import { useLandingLive } from "@/lib/landing-api";
-import { nprCompact } from "@/lib/api";
+import Skeleton from "@/components/ui/Skeleton";
 
 // A single continuous strip of real platform figures. It sits between the hero
 // and the feature grid to make the "this is wired to a real warehouse" claim
-// before the marketing copy starts.
+// before the marketing copy starts. Platform-scale only — no revenue, orders,
+// margins or anomaly counts.
 
 export default function LiveTicker() {
   const track = useRef<HTMLDivElement>(null);
-  const { data: live } = useLandingLive();
+  const { data: live, loading } = useLandingLive();
 
   const items = live
     ? [
         `${live.totals.records_unified.toLocaleString("en-IN")} rows unified`,
-        `${nprCompact(live.totals.revenue)} revenue analysed`,
-        `${live.totals.orders.toLocaleString("en-IN")} orders processed`,
-        `${live.totals.kpi_points.toLocaleString("en-IN")} KPI points computed`,
-        `${live.totals.forecast_points} forecast points`,
-        `${live.totals.models_trained} ML models trained`,
-        `${live.totals.anomalies_total} anomalies detected`,
-        `${live.totals.insights} AI insights written`,
+        `${live.totals.data_sources} data sources connected`,
         `${live.totals.etl_jobs} ETL runs · ${live.pipeline.success_rate_pct}% success`,
+        `${live.totals.kpi_points.toLocaleString("en-IN")} KPI points computed`,
+        `${live.totals.forecast_points.toLocaleString("en-IN")} forecast points`,
+        `${live.totals.models_trained} ML models trained`,
+        `${live.totals.insights} AI insights written`,
         `${live.totals.products} products · ${live.totals.customers} customers`,
       ]
     : [];
@@ -39,7 +37,23 @@ export default function LiveTicker() {
     { scope: track, dependencies: [live] },
   );
 
-  if (items.length === 0) return null;
+  if (items.length === 0) {
+    if (!loading) return null;
+    return (
+      <section
+        aria-label="Loading platform metrics"
+        className="border-y border-border bg-white/70 py-4 backdrop-blur"
+      >
+        <div className="edge-fade overflow-hidden">
+          <div className="flex w-max items-center gap-8 px-6">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-3.5 w-40" />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section

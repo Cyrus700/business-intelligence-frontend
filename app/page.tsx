@@ -1,5 +1,6 @@
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import LandingGate from "@/components/landing/LandingGate";
 import Hero from "@/components/sections/Hero";
 import LiveTicker from "@/components/sections/LiveTicker";
 import Stats from "@/components/sections/Stats";
@@ -14,7 +15,7 @@ import CtaNewsletter from "@/components/sections/CtaNewsletter";
 
 export default function Home() {
   return (
-    <>
+    <LandingGate>
       <Navbar />
       <main className="flex-1">
         <Hero />
@@ -30,6 +31,6 @@ export default function Home() {
         <CtaNewsletter />
       </main>
       <Footer />
-    </>
+    </LandingGate>
   );
 }

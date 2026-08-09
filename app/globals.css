@@ -224,7 +224,9 @@
     transform: scale(1.8);
     opacity: 0;
   }
+}
 
+@layer components {
   /* Retained for the auth brand panel only (not used on the landing page). */
   .mesh-glow {
     background:
@@ -317,22 +319,36 @@
   }
 }
 
+/* Landing preloader — indeterminate progress sweep. */
+@keyframes loader-progress {
+  from {
+    transform: translateX(-120%);
+  }
+  to {
+    transform: translateX(420%);
+  }
+}
+
+/* Honour the OS "Reduce motion" setting — unless this browser has explicitly
+   opted back in via ?motion=on, which sets html[data-motion="force"]. Without
+   that escape hatch the `!important` rules below would override GSAP's inline
+   opacity and the forced animations would never be visible. */
 @media (prefers-reduced-motion: reduce) {
-  html {
+  html:not([data-motion="force"]) {
     scroll-behavior: auto;
   }
-  [data-reveal] {
+  html:not([data-motion="force"]) [data-reveal] {
     opacity: 1 !important;
     transform: none !important;
   }
-  .ai-typing span {
+  html:not([data-motion="force"]) .ai-typing span {
     animation: none;
     opacity: 0.7;
   }
-  .pulse-dot::before {
+  html:not([data-motion="force"]) .pulse-dot::before {
     animation: none;
   }
-  .aurora span {
+  html:not([data-motion="force"]) .aurora span {
     opacity: 0.32;
   }
 }

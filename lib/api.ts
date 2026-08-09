@@ -34,6 +34,7 @@ export const queryKeys = {
   alerts: { all: ["alerts"] as const, rules: (p?: object) => ["alerts", "rules", p] as const },
   notifications: { all: ["notifications"] as const, list: (p?: object) => ["notifications", "list", p] as const },
   users: { all: ["users"] as const, list: () => ["users", "list"] as const, detail: (id: string) => ["users", "detail", id] as const },
+  coverage: { all: ["coverage"] as const, data: () => ["coverage", "data"] as const },
   rbac: { all: ["rbac"] as const, matrix: () => ["rbac", "matrix"] as const, me: () => ["rbac", "me"] as const, audit: (limit: number) => ["rbac", "audit", limit] as const },
 };
 
@@ -117,18 +118,30 @@ export async function apiDelete(path: string): Promise<void> {
 // Replaces the old useState+useEffect implementation.
 // All existing consumers get caching, dedup, retry, and refetch for free.
 
+export type UseApiOptions = {
+  /** How long a response stays fresh before a background refetch (ms). */
+  staleTime?: number;
+  /** Polling interval; pass false to disable periodic refetching entirely. */
+  refetchInterval?: number | false;
+  /** Refetch when the tab regains focus (only while stale). */
+  refetchOnWindowFocus?: boolean;
+};
+
 export function useApi<T>(
   path: string,
   params?: Record<string, string | number | boolean | undefined>,
   queryKey?: unknown[],
   retry?: number | boolean,
+  options?: UseApiOptions,
 ) {
   const maxRetries = typeof retry === "number" ? retry : retry === true ? 2 : 0;
   const key = queryKey ?? [path, params];
   const { data, error, isLoading } = useQuery<T>({
     queryKey: key,
     queryFn: () => apiGet<T>(path, params),
-    staleTime: 30_000,
+    staleTime: options?.staleTime ?? 30_000,
+    refetchInterval: options?.refetchInterval,
+    refetchOnWindowFocus: options?.refetchOnWindowFocus,
     retry: (failureCount, err) => {
       if (failureCount >= maxRetries) return false;
       if (err instanceof ApiError && err.status < 500) return false;
@@ -219,6 +232,28 @@ export type InventoryRow = {
   reorder_level: number;
   below_reorder: boolean;
   warehouse: string | null;
+};
+
+// ── data coverage (mirrors app/schemas/analytics.py DataCoverage) ─────
+
+export type TableCoverage = {
+  first_date: string | null;
+  last_date: string | null;
+  row_count: number;
+  last_ingested_at: string | null;
+};
+
+export type DataCoverage = {
+  sales: TableCoverage;
+  expenses: TableCoverage;
+  inventory: TableCoverage;
+  first_date: string | null;
+  last_date: string | null;
+  last_ingested_at: string | null;
+  today: string;
+  timezone: string;
+  /** Days between the newest business date in the warehouse and today. */
+  days_behind: number | null;
 };
 
 // ---- formatting ----

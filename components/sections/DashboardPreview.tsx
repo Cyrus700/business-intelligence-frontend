@@ -14,8 +14,9 @@ import Container from "@/components/ui/Container";
 import SectionHeading from "@/components/ui/SectionHeading";
 import LiveDashboard from "@/components/ui/LiveDashboard";
 import Icon from "@/components/ui/Icon";
-import { useLandingLive } from "@/lib/landing-api";
-import { nprCompact } from "@/lib/api";
+import Skeleton from "@/components/ui/Skeleton";
+import { useLandingLive, relativeTime } from "@/lib/landing-api";
+import { clsx } from "@/lib/cx";
 
 export default function DashboardPreview() {
   const root = useRef<HTMLDivElement>(null);
@@ -79,6 +80,10 @@ export default function DashboardPreview() {
 
   const model = live?.model;
   const insight = live?.insight;
+  const p = live?.pipeline;
+  const statuses = Object.entries(p?.by_status ?? {})
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3);
 
   return (
     <section className="relative overflow-hidden py-24 md:py-32">
@@ -91,7 +96,7 @@ export default function DashboardPreview() {
               Built to be read <span className="text-gradient">at a glance</span>
             </>
           }
-          subtitle="This is the real panel, wired to the live warehouse — the same KPIs, forecast band and anomaly feed your team would open every morning."
+          subtitle="A live look at the real platform — warehouse scale, pipeline health and AI output, exactly what your team opens every morning."
         />
 
         <div
@@ -105,7 +110,7 @@ export default function DashboardPreview() {
           </div>
 
           <div className="grid gap-4">
-            {/* The most recent insight the AI layer actually wrote. */}
+            {/* The AI layer keeps working in the background, writing insights. */}
             <article
               data-side
               className="surface-ring rounded-2xl border border-border bg-white p-6 shadow-card"
@@ -114,30 +119,41 @@ export default function DashboardPreview() {
                 <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary-50 text-primary">
                   <Icon name="spark" className="h-4 w-4" />
                 </span>
-                <h3 className="text-sm font-semibold text-ink">Latest AI insight</h3>
-                {insight && (
-                  <span className="ml-auto rounded-full bg-warn-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-warn">
-                    {insight.severity}
-                  </span>
-                )}
+                <h3 className="text-sm font-semibold text-ink">AI insight engine</h3>
               </div>
-              {insight ? (
-                <>
-                  <p className="mt-4 text-sm font-semibold text-ink">{insight.title}</p>
-                  <p className="mt-2 text-sm leading-relaxed text-ink-soft">
-                    {insight.body}
-                  </p>
-                </>
-              ) : (
-                <div className="mt-4 space-y-2">
-                  <div className="h-3 w-3/4 animate-pulse rounded bg-bg-soft" />
-                  <div className="h-3 w-full animate-pulse rounded bg-bg-soft" />
-                  <div className="h-3 w-5/6 animate-pulse rounded bg-bg-soft" />
+              <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                <div>
+                  <dt className="text-xs text-ink-muted">Insights written</dt>
+                  <dd className="font-mono font-semibold text-ink">
+                    {live
+                      ? live.totals.insights.toLocaleString("en-IN")
+                      : "—"}
+                  </dd>
                 </div>
-              )}
+                <div>
+                  <dt className="text-xs text-ink-muted">Latest type</dt>
+                  <dd className="font-mono font-semibold text-ink">
+                    {insight?.type?.replace(/_/g, " ") ?? "—"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-ink-muted">Generated</dt>
+                  <dd className="font-mono font-semibold text-ink">
+                    {relativeTime(insight?.generated_at ?? null)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-ink-muted">Forecast points</dt>
+                  <dd className="font-mono font-semibold text-ink">
+                    {live
+                      ? live.totals.forecast_points.toLocaleString("en-IN")
+                      : "—"}
+                  </dd>
+                </div>
+              </dl>
             </article>
 
-            {/* Model card — the real champion model and its holdout scores. */}
+            {/* Model card — the champion model, without business metrics. */}
             <article
               data-side
               className="rounded-2xl border border-border bg-white p-6 shadow-card"
@@ -147,6 +163,18 @@ export default function DashboardPreview() {
                   <Icon name="trend" className="h-4 w-4" />
                 </span>
                 <h3 className="text-sm font-semibold text-ink">Active model</h3>
+                {model && (
+                  <span
+                    className={clsx(
+                      "ml-auto rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                      model.is_active
+                        ? "bg-accent-50 text-accent"
+                        : "bg-bg-soft text-ink-muted",
+                    )}
+                  >
+                    {model.is_active ? "Active" : "Idle"}
+                  </span>
+                )}
               </div>
               <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
                 <div>
@@ -156,63 +184,71 @@ export default function DashboardPreview() {
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-ink-muted">Target</dt>
+                  <dt className="text-xs text-ink-muted">Version</dt>
                   <dd className="font-mono font-semibold text-ink">
-                    {model?.target.replace(/_/g, " ") ?? "—"}
+                    {model ? `v${model.version}` : "—"}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-ink-muted">Trained on</dt>
+                  <dt className="text-xs text-ink-muted">Trained</dt>
                   <dd className="font-mono font-semibold text-ink">
-                    {model?.training_rows?.toLocaleString("en-IN") ?? "—"} rows
+                    {model?.trained_at
+                      ? new Date(model.trained_at).toLocaleDateString("en-GB", {
+                          dateStyle: "medium",
+                        })
+                      : "—"}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-ink-muted">Holdout MAPE</dt>
+                  <dt className="text-xs text-ink-muted">Models trained</dt>
                   <dd className="font-mono font-semibold text-ink">
-                    {typeof model?.metrics?.mape === "number"
-                      ? `${(model.metrics.mape as number).toFixed(1)}%`
+                    {live
+                      ? live.totals.models_trained.toLocaleString("en-IN")
                       : "—"}
                   </dd>
                 </div>
               </dl>
             </article>
 
-            {/* Revenue split by sales channel — trailing 90 days, real. */}
+            {/* ETL pipeline — real run history, no business figures. */}
             <article
               data-side
               className="rounded-2xl border border-border bg-white p-6 shadow-card"
             >
               <h3 className="text-sm font-semibold text-ink">
-                Revenue by channel
+                ETL pipeline
                 <span className="ml-2 text-xs font-normal text-ink-muted">
-                  last 90 days
+                  {p?.last_run_at ? `last run ${relativeTime(p.last_run_at)}` : null}
                 </span>
               </h3>
               <div className="mt-4 grid gap-3">
-                {(live?.channels ?? []).map((c) => (
-                  <div key={c.key}>
-                    <div className="flex items-baseline justify-between text-xs">
-                      <span className="font-medium capitalize text-ink-soft">
-                        {c.key}
-                      </span>
-                      <span className="font-mono tabular-nums text-ink-muted">
-                        {nprCompact(c.revenue)} · {c.share_pct}%
-                      </span>
-                    </div>
-                    <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-bg-soft">
-                      <span
-                        data-dim-bar
-                        style={{ width: `${c.share_pct}%` }}
-                        className="block h-full origin-left rounded-full bg-gradient-to-r from-primary to-sky"
-                      />
-                    </span>
-                  </div>
-                ))}
-                {!live && (
+                {live ? (
+                  statuses.map(([key, n]) => {
+                    const total = statuses.reduce((s, [, v]) => s + v, 0) || 1;
+                    return (
+                      <div key={key}>
+                        <div className="flex items-baseline justify-between text-xs">
+                          <span className="font-medium capitalize text-ink-soft">
+                            {key.replace(/_/g, " ")}
+                          </span>
+                          <span className="font-mono tabular-nums text-ink-muted">
+                            {n} runs · {Math.round((n / total) * 100)}%
+                          </span>
+                        </div>
+                        <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-bg-soft">
+                          <span
+                            data-dim-bar
+                            style={{ width: `${(n / total) * 100}%` }}
+                            className="block h-full origin-left rounded-full bg-gradient-to-r from-primary to-sky"
+                          />
+                        </span>
+                      </div>
+                    );
+                  })
+                ) : (
                   <div className="space-y-3">
                     {[0, 1, 2].map((i) => (
-                      <div key={i} className="h-3 animate-pulse rounded bg-bg-soft" />
+                      <Skeleton key={i} className="h-3 w-full" />
                     ))}
                   </div>
                 )}

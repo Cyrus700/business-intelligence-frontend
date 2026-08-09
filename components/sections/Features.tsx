@@ -9,7 +9,6 @@ import Icon from "@/components/ui/Icon";
 import { DUR, EASE, pointerSpotlight, prefersReducedMotion } from "@/lib/motion";
 import { useLandingLive, useLandingData } from "@/lib/landing-api";
 import { FEATURES } from "@/lib/content";
-import { nprCompact } from "@/lib/api";
 
 type IconName = "chart" | "trend" | "alert" | "spark" | "pipe" | "lock";
 
@@ -20,20 +19,19 @@ export default function Features() {
   const features = data?.features ?? FEATURES;
 
   // Each capability carries the figure that proves it is actually running.
-  // Keyed by icon so it survives copy edits on the backend.
+  // Keyed by icon so it survives copy edits on the backend. Platform-scale
+  // only — no revenue, orders or anomaly counts.
   const proofByIcon: Record<string, string | null> = {
-    chart: live ? `${live.totals.kpi_points.toLocaleString("en-IN")} KPI points live` : null,
+    chart: live ? `${live.totals.records_unified.toLocaleString("en-IN")} records unified` : null,
     trend: live
       ? `${live.totals.forecast_points} forecast points · ${live.totals.models_trained} models`
       : null,
-    alert: live
-      ? `${live.totals.anomalies_total} detected · ${live.totals.anomalies_open} open`
-      : null,
+    alert: live ? `Isolation-Forest engine · 24/7 monitoring` : null,
     spark: live ? `${live.totals.insights} insights written` : null,
     pipe: live
       ? `${live.totals.data_sources} sources · ${live.pipeline.success_rate_pct}% ETL success`
       : null,
-    lock: live ? `${nprCompact(live.totals.revenue)} under role-based access` : null,
+    lock: live ? `${live.totals.kpi_points.toLocaleString("en-IN")} KPI points under role-based access` : null,
   };
 
   useGSAP(

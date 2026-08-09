@@ -51,8 +51,18 @@ export type LandingData = {
   faqs: LandingFaq[];
 };
 
+// Landing content and live metrics change rarely and every section on the page
+// subscribes to these keys — so they stay marked fresh for 30 minutes and never
+// poll or refetch on focus. One fetch per visit, instead of one per section
+// mount plus a hit every minute.
+const LANDING_STALE_TIME = 30 * 60_000; // 30 min
+
 export function useLandingData() {
-  return useApi<LandingData>("/landing", undefined, ["landing"]);
+  return useApi<LandingData>("/landing", undefined, ["landing"], undefined, {
+    staleTime: LANDING_STALE_TIME,
+    refetchInterval: false,
+    refetchOnWindowFocus: false,
+  });
 }
 
 // ── Live warehouse metrics (GET /landing/live) ────────────────────
@@ -155,14 +165,26 @@ export type LandingLive = {
 };
 
 export function useLandingLive() {
-  return useApi<LandingLive>("/landing/live", undefined, ["landing", "live"]);
+  return useApi<LandingLive>("/landing/live", undefined, ["landing", "live"], undefined, {
+    staleTime: LANDING_STALE_TIME,
+    refetchInterval: false,
+    refetchOnWindowFocus: false,
+  });
 }
 
 // ── Derived helpers shared by the landing visuals ─────────────────
 
-/** Complete months only — drops the in-flight trailing month. */
-export function settledMonths(series: LiveMonth[] | undefined): LiveMonth[] {
-  return (series ?? []).filter((m) => !m.partial);
+/** "2026-08-01T09:41:00" → "2h ago" (or "just now" under a minute). */
+export function relativeTime(iso: string | null): string {
+  if (!iso) return "—";
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return "—";
+  const mins = Math.round((Date.now() - then) / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.round(hrs / 24)}d ago`;
 }
 
 /** "2026-07" → "Jul" for compact chart axes. */
@@ -170,11 +192,4 @@ export function monthLabel(month: string): string {
   const [y, m] = month.split("-").map(Number);
   if (!y || !m) return month;
   return new Date(y, m - 1, 1).toLocaleString("en", { month: "short" });
-}
-
-/** Model MAPE → an accuracy percentage, clamped to a sane 0–100. */
-export function modelAccuracyPct(live: LandingLive | null): number | null {
-  const mape = live?.model?.metrics?.mape;
-  if (typeof mape !== "number") return null;
-  return Math.max(0, Math.min(100, Math.round((100 - mape) * 10) / 10));
 }

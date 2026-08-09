@@ -14,15 +14,18 @@ import TransactionsTable from "@/components/dashboard/live/TransactionsTable";
 import LowStock from "@/components/dashboard/live/LowStock";
 import LiveRecommendations from "@/components/dashboard/live/LiveRecommendations";
 import RoleOverview from "@/components/dashboard/role/RoleOverview";
+import DataFreshness from "@/components/dashboard/live/DataFreshness";
 import { RangePicker } from "@/lib/filters";
 
 export default function OverviewClient() {
   return (
     <>
       <PageHeader title="Overview" subtitle="" action={<RangePicker />} />
-      <p className="-mt-4 mb-6 text-sm text-ink-soft">
+      <p className="-mt-4 mb-4 text-sm text-ink-soft">
         <Greeting />
       </p>
+
+      <DataFreshness className="mb-6" />
 
       <KpiRow />
 

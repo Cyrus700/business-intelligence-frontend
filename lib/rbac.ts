@@ -7,7 +7,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiDelete, apiGet, apiPatch, apiPost, apiPut, queryKeys } from "@/lib/api";
+import { apiDelete, apiGet, apiPatch, apiPost, queryKeys } from "@/lib/api";
 import {
   PERMISSIONS,
   PERMISSION_GROUPS,
@@ -104,12 +104,6 @@ export type PermissionUpdateBody = Partial<Omit<PermissionCreateBody, "key">>;
 // Mirrors the seed in app/core/rbac_defaults.py so a failed /rbac/matrix
 // request degrades to the shipped policy instead of an empty screen.
 
-const PERMISSION_META = new Map(
-  PERMISSION_GROUPS.flatMap((g) =>
-    g.permissions.map((p, i) => [p.key, { ...p, group: g.label, order: i }] as const),
-  ),
-);
-
 export function fallbackMatrix(): RbacMatrix {
   const now = new Date(0).toISOString();
   const roles: RbacRole[] = (Object.keys(ROLE_RANK) as Array<keyof typeof ROLE_RANK>).map(
@@ -152,10 +146,6 @@ export function fallbackMatrix(): RbacMatrix {
     matrix: Object.fromEntries(roles.map((r) => [r.name, r.permissions])),
     updated_at: null,
   };
-}
-
-export function permissionLabel(key: string): string {
-  return PERMISSION_META.get(key)?.label ?? key;
 }
 
 // ── queries ───────────────────────────────────────────────────────
@@ -209,12 +199,6 @@ function useRbacMutation<TArgs>(fn: (args: TArgs) => Promise<unknown>) {
 export function useSaveMatrix() {
   return useRbacMutation<GrantChange[]>((changes) =>
     apiPatch<RbacMatrix>("/rbac/matrix", { changes }),
-  );
-}
-
-export function useReplaceRoleGrants() {
-  return useRbacMutation<{ role: string; permissions: string[] }>(({ role, permissions }) =>
-    apiPut<RbacRole>(`/rbac/roles/${role}/permissions`, { permissions }),
   );
 }
 

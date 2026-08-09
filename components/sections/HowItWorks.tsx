@@ -27,7 +27,7 @@ export default function HowItWorks() {
     },
     live && {
       value: live.totals.insights.toLocaleString("en-IN"),
-      label: `written insights · ${live.totals.anomalies_open} awaiting triage`,
+      label: `AI insights written for the dashboard`,
     },
   ];
 

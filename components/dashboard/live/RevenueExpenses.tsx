@@ -2,7 +2,7 @@
 
 import { useApi } from "@/lib/api";
 import type { Timeseries } from "@/lib/api";
-import { apiParams, useFilters } from "@/lib/filters";
+import { apiParams, granularityFor, useFilters } from "@/lib/filters";
 import AreaRevenue from "../charts/AreaRevenue";
 import type { RevenuePoint } from "../charts/AreaRevenue";
 import { EmptyState, PanelError, PanelSkeleton } from "./Status";
@@ -10,7 +10,7 @@ import { EmptyState, PanelError, PanelSkeleton } from "./Status";
 export default function RevenueExpenses() {
   const { filters } = useFilters();
   const params = apiParams(filters);
-  const granularity = filters.range === "12m" ? "week" : "day";
+  const granularity = granularityFor(filters.range);
   const revenue = useApi<Timeseries>("/kpis/timeseries", {
     ...params,
     metric: "revenue",

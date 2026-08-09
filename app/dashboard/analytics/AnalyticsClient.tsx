@@ -9,6 +9,7 @@ import SalesExplorer from "@/components/dashboard/live/SalesExplorer";
 import RegionTable from "@/components/dashboard/live/RegionTable";
 import ForecastAccuracy from "@/components/dashboard/live/ForecastAccuracy";
 import RoleAnalytics from "@/components/dashboard/role/RoleAnalytics";
+import DataFreshness from "@/components/dashboard/live/DataFreshness";
 import { RangePicker } from "@/lib/filters";
 import { useApi, npr } from "@/lib/api";
 import type { PnlRow } from "@/lib/api";
@@ -49,6 +50,8 @@ export default function AnalyticsClient() {
         subtitle="Deep-dive into sales, categories and regions."
         action={<RangePicker />}
       />
+
+      <DataFreshness className="mb-6" />
 
       <RoleAnalytics>
         {(role) => (
