@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BRAND } from "@/lib/content";
 import Icon from "@/components/ui/Icon";
+import BrandLogo from "@/components/ui/BrandLogo";
 import AuthBrandPanel from "./AuthBrandPanel";
 
 export default function AuthShell({
@@ -18,11 +19,8 @@ export default function AuthShell({
     <div className="grid min-h-screen lg:grid-cols-[1fr_1.1fr]">
       {/* Form side */}
       <div className="flex flex-col px-6 py-8 sm:px-12">
-        <Link href="/" className="flex w-fit items-center gap-2 font-semibold text-ink">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-white shadow-lift">
-            <Icon name="chart" className="h-4 w-4" />
-          </span>
-          {BRAND.name}
+        <Link href="/" aria-label={`${BRAND.name} home`} className="flex w-fit items-center">
+          <BrandLogo height={40} priority />
         </Link>
 
         <div className="flex flex-1 items-center justify-center py-10">

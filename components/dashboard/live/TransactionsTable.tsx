@@ -38,12 +38,12 @@ export default function TransactionsTable({
       <table className="w-full min-w-[560px] text-left text-sm">
         <thead>
           <tr className="text-xs uppercase tracking-wide text-ink-muted">
-            <th className="pb-3 font-medium">Date</th>
-            <th className="pb-3 font-medium">Product</th>
-            <th className="pb-3 font-medium">Customer</th>
-            <th className="pb-3 font-medium">Channel</th>
-            <th className="pb-3 text-right font-medium">Qty</th>
-            <th className="pb-3 text-right font-medium">Amount</th>
+            <th className="whitespace-nowrap pb-3 font-medium">Date</th>
+            <th className="whitespace-nowrap pb-3 font-medium">Product</th>
+            <th className="whitespace-nowrap pb-3 font-medium">Customer</th>
+            <th className="whitespace-nowrap pb-3 font-medium">Channel</th>
+            <th className="whitespace-nowrap pb-3 text-right font-medium">Qty</th>
+            <th className="whitespace-nowrap pb-3 text-right font-medium">Amount</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
@@ -60,7 +60,7 @@ export default function TransactionsTable({
         </tbody>
       </table>
       {onPage && pages > 1 && (
-        <div className="mt-3 flex items-center justify-between text-sm text-ink-soft">
+        <div className="mt-4 flex flex-col items-start justify-between gap-3 border-t border-border pt-4 text-sm text-ink-soft sm:flex-row sm:items-center">
           <span>
             Page {data.page} of {pages} · {data.total.toLocaleString()} transactions
           </span>
@@ -68,14 +68,14 @@ export default function TransactionsTable({
             <button
               disabled={page <= 1}
               onClick={() => onPage(page - 1)}
-              className="rounded-lg border border-border px-3 py-1 disabled:opacity-40"
+              className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-bg-soft disabled:opacity-40 disabled:pointer-events-none"
             >
               Prev
             </button>
             <button
               disabled={page >= pages}
               onClick={() => onPage(page + 1)}
-              className="rounded-lg border border-border px-3 py-1 disabled:opacity-40"
+              className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-bg-soft disabled:opacity-40 disabled:pointer-events-none"
             >
               Next
             </button>

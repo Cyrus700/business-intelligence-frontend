@@ -19,7 +19,9 @@ type IconName =
   | "users"
   | "shield"
   | "copy"
-  | "close";
+  | "close"
+  | "download"
+  | "plus";
 
 const paths: Record<IconName, React.ReactNode> = {
   chart: (
@@ -120,6 +122,13 @@ const paths: Record<IconName, React.ReactNode> = {
       <path d="M5 15V5a2 2 0 012-2h10" />
     </>
   ),
+  download: (
+    <>
+      <path d="M12 3v12M7 10l5 5 5-5" />
+      <path d="M5 21h14" />
+    </>
+  ),
+  plus: <path d="M12 5v14M5 12h14" />,
   users: (
     <>
       <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />

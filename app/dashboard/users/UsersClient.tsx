@@ -354,15 +354,15 @@ function UsersTable() {
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
+              <table className="w-full min-w-[640px] text-left text-sm">
                 <thead>
                   <tr className="border-b border-border text-xs font-semibold uppercase text-ink-muted">
-                    <th className="px-3 py-3">Name</th>
-                    <th className="px-3 py-3">Email</th>
-                    <th className="px-3 py-3">Role</th>
-                    <th className="px-3 py-3">Department</th>
-                    <th className="px-3 py-3">Status</th>
-                    <th className="px-3 py-3 text-right">Actions</th>
+                    <th className="whitespace-nowrap px-3 py-3">Name</th>
+                    <th className="whitespace-nowrap px-3 py-3">Email</th>
+                    <th className="whitespace-nowrap px-3 py-3">Role</th>
+                    <th className="whitespace-nowrap px-3 py-3">Department</th>
+                    <th className="whitespace-nowrap px-3 py-3">Status</th>
+                    <th className="whitespace-nowrap px-3 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">

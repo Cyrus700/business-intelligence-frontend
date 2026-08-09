@@ -6,6 +6,7 @@ import { useGSAP } from "@gsap/react";
 import { EASE, prefersReducedMotion } from "@/lib/motion";
 import DashboardMock from "@/components/ui/DashboardMock";
 import Icon from "@/components/ui/Icon";
+import BrandLogo from "@/components/ui/BrandLogo";
 
 const POINTS = [
   "Real-time dashboards across every department",
@@ -46,7 +47,8 @@ export default function AuthBrandPanel() {
       <div className="mesh-glow pointer-events-none absolute inset-0 opacity-90" />
       <div className="dot-grid pointer-events-none absolute inset-0 opacity-20" />
 
-      <div data-fade className="relative">
+      <div data-fade className="relative flex flex-col items-start gap-6">
+        <BrandLogo height={48} onDark priority />
         <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-xs font-medium text-white/80 backdrop-blur">
           <span className="h-1.5 w-1.5 rounded-full bg-accent" />
           AI-Driven Cloud Business Intelligence

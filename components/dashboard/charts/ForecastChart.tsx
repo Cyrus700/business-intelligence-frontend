@@ -25,6 +25,24 @@ export type ForecastPoint = {
 // the area below `lo` with white — leaving a band between lo and hi.
 export default function ForecastChart({ data }: { data: ForecastPoint[] }) {
   return (
+    <div>
+      <div className="mb-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-ink-soft">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full bg-primary" />
+          Actual
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span
+            className="inline-block h-0.5 w-4"
+            style={{ backgroundImage: `repeating-linear-gradient(90deg, ${COLORS.accent} 0 3px, transparent 3px 6px)` }}
+          />
+          Forecast
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-[3px] bg-primary/15" />
+          90% confidence
+        </span>
+      </div>
     <ResponsiveContainer width="100%" height={280}>
       <ComposedChart data={data} margin={{ top: 10, right: 8, bottom: 0, left: -12 }}>
         <CartesianGrid vertical={false} stroke={GRID_STROKE} strokeDasharray="4 4" />
@@ -72,5 +90,6 @@ export default function ForecastChart({ data }: { data: ForecastPoint[] }) {
         />
       </ComposedChart>
     </ResponsiveContainer>
+    </div>
   );
 }

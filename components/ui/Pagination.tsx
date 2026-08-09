@@ -16,11 +16,11 @@ export default function Pagination({
   if (pages <= 1) return null;
 
   return (
-    <div className="flex items-center justify-between text-sm text-ink-soft">
+    <div className="flex flex-col items-start justify-between gap-3 text-sm text-ink-soft sm:flex-row sm:items-center">
       <span>
         Page {page} of {pages} · {total.toLocaleString()} {totalLabel}
       </span>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-1.5">
         <button
           disabled={page <= 1}
           onClick={() => onChange(page - 1)}

@@ -17,6 +17,20 @@ export type RevenuePoint = { period: string; revenue: number; expenses: number |
 
 export default function AreaRevenue({ data }: { data: RevenuePoint[] }) {
   return (
+    <div>
+      <div className="mb-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-ink-soft">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full bg-primary" />
+          Revenue
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-0.5 w-4 rounded-full" style={{ background: COLORS.muted }} />
+          Expenses
+        </span>
+        <span className="ml-auto hidden text-ink-muted sm:inline">
+          Selected period
+        </span>
+      </div>
     <ResponsiveContainer width="100%" height={300}>
       <ComposedChart data={data} margin={{ top: 10, right: 8, bottom: 0, left: -8 }}>
         <defs>
@@ -53,5 +67,6 @@ export default function AreaRevenue({ data }: { data: RevenuePoint[] }) {
         />
       </ComposedChart>
     </ResponsiveContainer>
+    </div>
   );
 }

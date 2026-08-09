@@ -34,6 +34,7 @@ export const queryKeys = {
   alerts: { all: ["alerts"] as const, rules: (p?: object) => ["alerts", "rules", p] as const },
   notifications: { all: ["notifications"] as const, list: (p?: object) => ["notifications", "list", p] as const },
   users: { all: ["users"] as const, list: () => ["users", "list"] as const, detail: (id: string) => ["users", "detail", id] as const },
+  rbac: { all: ["rbac"] as const, matrix: () => ["rbac", "matrix"] as const, me: () => ["rbac", "me"] as const, audit: (limit: number) => ["rbac", "audit", limit] as const },
 };
 
 // ── Raw fetch helpers (used by useQuery + useMutation) ───────────
@@ -86,6 +87,30 @@ export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
     throw new ApiError(res.status, String(b.detail ?? res.statusText));
   }
   return res.json() as Promise<T>;
+}
+
+export async function apiPut<T>(path: string, body: unknown): Promise<T> {
+  const headers = await authHeaders();
+  const res = await fetch(`${BASE}${path}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...headers },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const b = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new ApiError(res.status, String(b.detail ?? res.statusText));
+  }
+  return res.json() as Promise<T>;
+}
+
+// DELETE endpoints answer 204 with an empty body, so nothing is parsed.
+export async function apiDelete(path: string): Promise<void> {
+  const headers = await authHeaders();
+  const res = await fetch(`${BASE}${path}`, { method: "DELETE", headers });
+  if (!res.ok) {
+    const b = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new ApiError(res.status, String(b.detail ?? res.statusText));
+  }
 }
 
 // ── useApi hook (backed by TanStack Query) ───────────────────────

@@ -4,7 +4,8 @@ import Panel from "@/components/dashboard/Panel";
 import Icon from "@/components/ui/Icon";
 import { clsx } from "@/lib/cx";
 import { useRole, hasMinRole } from "@/lib/use-role";
-import { ROLE_DESCRIPTIONS, PERMISSIONS, type Role } from "@/lib/permissions";
+import { getRoleInfo, PERMISSIONS, type Role } from "@/lib/permissions";
+import { usePermissions } from "@/lib/use-role";
 
 const UPGRADE_PATH: Record<Role, { from: Role; to: Role; label: string } | null> = {
   analyst: { from: "analyst", to: "manager", label: "Upgrade to Manager" },
@@ -14,12 +15,14 @@ const UPGRADE_PATH: Record<Role, { from: Role; to: Role; label: string } | null>
 
 export default function RoleSection() {
   const role = useRole();
-  const roleInfo = role ? ROLE_DESCRIPTIONS[role] : null;
-  const upgrade = role ? UPGRADE_PATH[role] : null;
+  const roleInfo = getRoleInfo(role);
+  // Custom roles have no fixed upgrade path — only the built-in ladder does.
+  const upgrade = role ? (UPGRADE_PATH[role] ?? null) : null;
+  const permissions = usePermissions();
 
   if (!role || !roleInfo) return null;
 
-  const permissionCount = PERMISSIONS[role]?.length ?? 0;
+  const permissionCount = permissions.length;
 
   return (
     <Panel title="Your Role">

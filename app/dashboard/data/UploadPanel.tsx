@@ -10,6 +10,7 @@ import type { UploadRecord } from "@/lib/api";
 import { formatBytes } from "./format";
 
 const MAX_BYTES = 50 * 1024 * 1024;
+const DOMAIN_LIMIT_ROWS = 200;
 
 const DOMAINS: Array<{ value: string; label: string; hint: string }> = [
   { value: "sales", label: "Sales", hint: "date · sku · quantity · unit_price" },
@@ -29,18 +30,98 @@ const DOMAIN_LABEL: Record<string, string> = {
   inventory: "Inventory",
 };
 
+// Mirrors app.services.etl.domains.COLUMN_ALIASES — keep both in sync.
+const COLUMN_ALIASES: Record<string, string[]> = {
+  date: [
+    "date",
+    "txn_date",
+    "transaction_date",
+    "order_date",
+    "sale_date",
+    "expense_date",
+    "snapshot_date",
+    "entry_date",
+  ],
+  sku: ["sku", "item_sku", "item_code", "product_code", "product_id"],
+  quantity: ["quantity", "qty", "quantity_sold", "qty_sold", "units", "units_sold"],
+  unit_price: ["unit_price", "unitprice", "price", "selling_price", "retail_price"],
+  category: ["category", "category_name", "expense_category"],
+  amount: ["amount", "expense_amount", "transaction_amount", "value"],
+  quantity_on_hand: [
+    "quantity_on_hand",
+    "qty_on_hand",
+    "on_hand",
+    "on_hand_qty",
+    "current_stock",
+    "stock_qty",
+    "stock",
+  ],
+};
+
+const ALIAS_LOOKUP = new Map<string, string>();
+
+for (const [canonical, names] of Object.entries(COLUMN_ALIASES)) {
+  ALIAS_LOOKUP.set(canonical, canonical);
+  for (const name of names) ALIAS_LOOKUP.set(name, canonical);
+}
+
+type ResolvedHeaders = {
+  /** canonical column name -> original header as shown in the file */
+  canonical: Map<string, string>;
+  /** canonical names that came from more than one source column */
+  conflicts: string[];
+  /** canonical name -> list of original headers (first is preferred) */
+  byCanonical: Map<string, string[]>;
+};
+
+function resolveHeaders(headers: string[]): ResolvedHeaders {
+  const normalize = (name: string) => name.trim().toLowerCase().replace(/\s+/g, "_");
+  const byCanonical = new Map<string, string[]>();
+  for (const h of headers) {
+    const canon = ALIAS_LOOKUP.get(normalize(h)) ?? normalize(h);
+    const list = byCanonical.get(canon) ?? [];
+    if (!list.includes(h.trim())) list.push(h.trim());
+    byCanonical.set(canon, list);
+  }
+  const canonical = new Map<string, string>();
+  for (const [canon, list] of byCanonical) canonical.set(canon, list[0]);
+  const conflicts = [...byCanonical]
+    .filter(([, list]) => list.length > 1)
+    .map(([canon]) => canon);
+  return { canonical, conflicts, byCanonical };
+}
+
+function matchScore(domain: string, canonical: Map<string, string>): number {
+  return (REQUIRED_COLUMNS[domain] ?? []).filter((c) => canonical.has(c)).length;
+}
+
+function bestDomain(canonical: Map<string, string>): { value: string; matched: number; total: number } | null {
+  let best: { value: string; matched: number; total: number } | null = null;
+  for (const d of DOMAINS) {
+    const matched = matchScore(d.value, canonical);
+    if (matched === 0) continue;
+    const total = REQUIRED_COLUMNS[d.value].length;
+    if (!best || matched > best.matched) best = { value: d.value, matched, total };
+  }
+  if (!best) return null;
+  const tied = DOMAINS.filter((d) => matchScore(d.value, canonical) === best!.matched).length > 1;
+  return tied ? null : best;
+}
+
 type CsvPreview = { headers: string[]; rows: string[][] };
 
-function parseCsv(text: string, maxRows = 6): CsvPreview {
+function parseCsv(text: string, maxRows = DOMAIN_LIMIT_ROWS): CsvPreview {
+  let src = text;
+  if (src.charCodeAt(0) === 0xfeff) src = src.slice(1); // strip UTF-8 BOM
   const rows: string[][] = [];
   let field = "";
   let row: string[] = [];
   let inQuotes = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
+  for (let i = 0; i < src.length; i++) {
+    const ch = src[i];
     if (inQuotes) {
       if (ch === '"') {
-        if (text[i + 1] === '"') {
+        if (src[i + 1] === '"') {
           field += '"';
           i++;
         } else inQuotes = false;
@@ -51,7 +132,7 @@ function parseCsv(text: string, maxRows = 6): CsvPreview {
       row.push(field);
       field = "";
     } else if (ch === "\n" || ch === "\r") {
-      if (ch === "\r" && text[i + 1] === "\n") i++;
+      if (ch === "\r" && src[i + 1] === "\n") i++;
       row.push(field);
       field = "";
       if (row.some((c) => c.trim() !== "")) rows.push(row);
@@ -62,6 +143,111 @@ function parseCsv(text: string, maxRows = 6): CsvPreview {
   if (row.length && row.some((c) => c.trim() !== "")) rows.push(row);
   if (!rows.length) return { headers: [], rows: [] };
   return { headers: rows[0], rows: rows.slice(1) };
+}
+
+async function parseXlsx(file: File, maxRows = DOMAIN_LIMIT_ROWS): Promise<CsvPreview> {
+  const buf = await file.arrayBuffer();
+  const { read, utils } = await import("xlsx");
+  const wb = read(buf, { type: "array", cellDates: true });
+  const sheet = wb.Sheets[wb.SheetNames[0]];
+  if (!sheet) return { headers: [], rows: [] };
+  const raw = utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: "", raw: true });
+  if (!raw.length) return { headers: [], rows: [] };
+  const [head, ...body] = raw;
+  const headers = (head ?? []).map((h) => String(h ?? "").trim());
+  const rows = body
+    .filter((r) => r.some((c) => String(c ?? "").trim() !== ""))
+    .slice(0, maxRows)
+    .map((r) => r.map(cellToText));
+  return { headers, rows };
+}
+
+function cellToText(value: unknown): string {
+  if (value == null) return "";
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  if (typeof value === "string") return value;
+  return String(value);
+}
+
+type RowIssue = { row: number; reason: string };
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}(?:[T ].*)?$/;
+
+function spotCheck(
+  headers: string[],
+  rows: string[][],
+  resolved: ResolvedHeaders,
+  domain: string,
+): RowIssue[] {
+  const indexOf = (canon: string) => {
+    const original = resolved.canonical.get(canon);
+    if (original == null) return -1;
+    return headers.findIndex((h) => h.trim() === original);
+  };
+  const issues: RowIssue[] = [];
+  const check = (col: string, test: (v: string) => string | null) => {
+    const i = indexOf(col);
+    if (i === -1) return;
+    rows.forEach((r, rowIdx) => {
+      const v = (r[i] ?? "").trim();
+      if (!v) return;
+      const problem = test(v);
+      if (problem) issues.push({ row: rowIdx + 1, reason: `${col}: ${problem}` });
+    });
+  };
+
+  check("date", (v) => (DATE_RE.test(v) ? null : `"${v}" is not a valid date (use YYYY-MM-DD)`));
+  if (domain === "sales") {
+    check("quantity", (v) => {
+      const n = Number(v);
+      return Number.isInteger(n) && n >= 1 ? null : `"${v}" is not a whole number ≥ 1`;
+    });
+    check("unit_price", (v) => {
+      const n = Number(v);
+      return !Number.isNaN(n) && n >= 0 ? null : `"${v}" is not a number ≥ 0`;
+    });
+    check("discount", (v) => {
+      const n = Number(v);
+      return !Number.isNaN(n) && n >= 0 ? null : `"${v}" is not a number ≥ 0`;
+    });
+  }
+  if (domain === "finance") {
+    check("amount", (v) => {
+      const n = Number(v);
+      return !Number.isNaN(n) && n > 0 ? null : `"${v}" is not a number > 0`;
+    });
+  }
+  if (domain === "inventory") {
+    check("quantity_on_hand", (v) => {
+      const n = Number(v);
+      return Number.isInteger(n) && n >= 0 ? null : `"${v}" is not a whole number ≥ 0`;
+    });
+  }
+  return issues.slice(0, 10);
+}
+
+function SampleStrip() {
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-bg-soft/40 px-3.5 py-2.5">
+      <span className="text-xs font-semibold text-ink-muted">
+        Need a template? Download a ready-to-upload sample:
+      </span>
+      {DOMAINS.map((d) => (
+        <a
+          key={d.value}
+          href={`/samples/${d.value}-sample.xlsx`}
+          download
+          className="inline-flex items-center gap-1.5 rounded-lg border border-primary/25 bg-primary-50/60 px-2.5 py-1.5 text-xs font-medium text-primary hover:bg-primary-50 hover:ring-2 hover:ring-primary/20"
+        >
+          <Icon name="download" className="h-3.5 w-3.5" />
+          {d.label} .xlsx
+        </a>
+      ))}
+      <span className="ml-auto hidden text-[11px] text-ink-muted sm:block">
+        Pick the matching domain below, then upload — no edits needed.
+      </span>
+    </div>
+  );
 }
 
 function ResultCard({ result, onReset }: { result: UploadRecord; onReset: () => void }) {
@@ -103,6 +289,7 @@ function ResultCard({ result, onReset }: { result: UploadRecord; onReset: () => 
                     Row {d.row} — {d.reason}
                   </li>
                 ))}
+                {details.length > 10 && <li>+ {details.length - 10} more…</li>}
               </ul>
             </details>
           )}
@@ -130,12 +317,42 @@ export default function UploadPanel({ canManage }: { canManage: boolean }) {
   const [result, setResult] = useState<UploadRecord | null>(null);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [bestMatchApplied, setBestMatchApplied] = useState<{
+    value: string;
+    matched: number;
+    total: number;
+  } | null>(null);
+
+  const resolved = useMemo(() => (preview ? resolveHeaders(preview.headers) : null), [preview]);
 
   const missing = useMemo(() => {
-    if (!preview || preview.headers.length === 0) return [];
-    const normalized = preview.headers.map((h) => h.trim().toLowerCase());
-    return (REQUIRED_COLUMNS[domain] ?? []).filter((c) => !normalized.includes(c));
-  }, [preview, domain]);
+    if (!resolved) return [];
+    return (REQUIRED_COLUMNS[domain] ?? []).filter((c) => !resolved.canonical.has(c));
+  }, [resolved, domain]);
+
+  const rowIssues = useMemo(
+    () =>
+      preview && resolved && missing.length === 0
+        ? spotCheck(preview.headers, preview.rows, resolved, domain)
+        : [],
+    [preview, resolved, missing.length, domain],
+  );
+
+  const aliasesUsed = useMemo(() => {
+    if (!resolved) return [];
+    const out: string[] = [];
+    for (const [canon, list] of resolved.byCanonical) {
+      if (list.length === 1 && list[0].trim().toLowerCase() !== canon) out.push(`${list[0]} → ${canon}`);
+    }
+    return out;
+  }, [resolved]);
+
+  const autoNote = useMemo(() => {
+    if (!resolved || bestMatchApplied == null) return null;
+    if (bestMatchApplied.matched === bestMatchApplied.total)
+      return `Detected ${DOMAIN_LABEL[bestMatchApplied.value]} — all ${bestMatchApplied.total} required columns matched, selected automatically.`;
+    return `Auto-selected ${DOMAIN_LABEL[bestMatchApplied.value]} (${bestMatchApplied.matched}/${bestMatchApplied.total} columns matched).`;
+  }, [resolved, bestMatchApplied]);
 
   const isCsv = file?.name.toLowerCase().endsWith(".csv") ?? false;
   const blocked = uploading || !file || !!clientError || missing.length > 0;
@@ -146,6 +363,7 @@ export default function UploadPanel({ canManage }: { canManage: boolean }) {
     setServerError(null);
     setPreview(null);
     setClientError(null);
+    setBestMatchApplied(null);
     if (!next) return;
     const name = next.name.toLowerCase();
     if (!/\.(csv|xlsx|xls)$/.test(name)) {
@@ -160,18 +378,32 @@ export default function UploadPanel({ canManage }: { canManage: boolean }) {
       setClientError("File is empty (0 bytes).");
       return;
     }
-    if (name.endsWith(".csv")) {
-      try {
-        const text = await next.slice(0, 262_144).text();
-        const parsed = parseCsv(text);
-        if (!parsed.headers.length) {
-          setClientError("Could not read this CSV — it appears to be empty.");
-          return;
-        }
-        setPreview(parsed);
-      } catch {
-        setClientError("Could not read this file for preview.");
+    try {
+      const parsed = name.endsWith(".csv")
+        ? parseCsv(await next.slice(0, 262_144).text())
+        : await parseXlsx(next);
+      if (!parsed.headers.length) {
+        setClientError(
+          name.endsWith(".csv")
+            ? "Could not read this CSV — it appears to be empty."
+            : "Could not read this Excel workbook — it appears to be empty.",
+        );
+        return;
       }
+      setPreview(parsed);
+      const best = bestDomain(resolveHeaders(parsed.headers).canonical);
+      if (best && best.value !== domain) {
+        setDomain(best.value);
+        setBestMatchApplied(best);
+      } else if (best) {
+        setBestMatchApplied(best);
+      }
+    } catch {
+      setClientError(
+        name.endsWith(".csv")
+          ? "Could not read this CSV for preview — is it corrupted?"
+          : "Could not read this Excel workbook — it may be corrupted or password-protected.",
+      );
     }
   }
 
@@ -234,6 +466,8 @@ export default function UploadPanel({ canManage }: { canManage: boolean }) {
           </div>
         )}
 
+        <SampleStrip />
+
         <div
           role="button"
           tabIndex={0}
@@ -277,7 +511,7 @@ export default function UploadPanel({ canManage }: { canManage: boolean }) {
             {dragOver ? "Drop it here" : "Drag & drop your file, or "}
             {!dragOver && <span className="text-primary">browse</span>}
           </p>
-          <p className="mt-1 text-xs text-ink-muted">CSV, XLSX or XLS · up to 50 MB</p>
+          <p className="mt-1 text-xs text-ink-muted">CSV, XLSX or XLS · up to 50 MB · first sheet used</p>
         </div>
 
         {clientError && (
@@ -295,7 +529,8 @@ export default function UploadPanel({ canManage }: { canManage: boolean }) {
               <p className="truncate text-sm font-medium text-ink">{file.name}</p>
               <p className="text-xs text-ink-muted">
                 {formatBytes(file.size)} · {isCsv ? "CSV" : "Excel"}
-                {!isCsv && " · preview only available for CSV"}
+                {!preview && " · preview not available"}
+                {preview && ` · ${preview.rows.length} rows in preview`}
               </p>
             </div>
             <button
@@ -309,10 +544,85 @@ export default function UploadPanel({ canManage }: { canManage: boolean }) {
           </div>
         )}
 
-        {preview && missing.length > 0 && (
-          <div className="rounded-xl border border-warn-200 bg-warn-50 px-4 py-3 text-sm text-warn">
-            Missing required columns for {DOMAIN_LABEL[domain]}:{" "}
-            <strong>{missing.join(", ")}</strong>. This file cannot be loaded for this domain.
+        {preview && autoNote && (
+          <div className="rounded-xl border border-green-200 bg-green-50/70 px-4 py-3 text-sm text-green-800">
+            {autoNote}
+          </div>
+        )}
+
+        {preview && resolved && resolved.conflicts.length > 0 && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <span className="font-medium">Column conflicts:</span> the file has multiple columns
+            that map to the same name —{" "}
+            <strong>
+              {resolved.conflicts
+                .map((c) => `${c} (${resolved.byCanonical.get(c)?.join(", ")})`)
+                .join("; ")}
+            </strong>
+            . The server will reject this file; remove or rename the duplicates first.
+          </div>
+        )}
+
+        {preview && resolved && missing.length > 0 && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <p>
+              <span className="font-medium">This file doesn&apos;t match {DOMAIN_LABEL[domain]}.</span>{" "}
+              {DOMAIN_LABEL[domain]} needs{" "}
+              <strong>{REQUIRED_COLUMNS[domain].join(", ")}</strong> — missing{" "}
+              <strong>{missing.join(", ")}</strong>.
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <span className="text-xs font-medium text-amber-900/70">Which format is your file?</span>
+              {DOMAINS.map((d) => {
+                const matched = matchScore(d.value, resolved.canonical);
+                const total = REQUIRED_COLUMNS[d.value].length;
+                const ready = matched === total;
+                const isCurrent = d.value === domain;
+                return (
+                  <button
+                    key={d.value}
+                    type="button"
+                    disabled={!ready || isCurrent}
+                    onClick={() => setDomain(d.value)}
+                    className={clsx(
+                      "rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors",
+                      ready && !isCurrent
+                        ? "border-green-300 bg-green-50 text-green-700 hover:bg-green-100"
+                        : isCurrent
+                          ? "border-primary bg-primary-50 text-primary"
+                          : "border-border bg-white text-ink-muted",
+                    )}
+                  >
+                    {d.label}: {ready ? "✓ ready" : `${matched}/${total}`}
+                  </button>
+                );
+              })}
+            </div>
+            {aliasesUsed.length > 0 && (
+              <p className="mt-2 text-xs text-amber-800/80">
+                Column names are matched flexibly (e.g. {aliasesUsed.slice(0, 3).join(", ")}
+                {aliasesUsed.length > 3 ? `, +${aliasesUsed.length - 3} more` : ""}).
+              </p>
+            )}
+            <p className="mt-1.5 text-xs text-amber-800/80">
+              Or download the matching sample above and copy its column names exactly.
+            </p>
+          </div>
+        )}
+
+        {preview && missing.length === 0 && rowIssues.length > 0 && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+            <span className="font-medium">Spot-check on preview rows:</span> some values may be
+            rejected during validation:
+            <ul className="mt-1 space-y-0.5 text-xs">
+              {rowIssues.map((it, i) => (
+                <li key={i}>
+                  Row {it.row} — {it.reason}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-1 text-xs">The full file is validated server-side; rejected rows are
+            skipped and reported after upload.</p>
           </div>
         )}
 
@@ -326,7 +636,7 @@ export default function UploadPanel({ canManage }: { canManage: boolean }) {
             >
               {DOMAINS.map((d) => (
                 <option key={d.value} value={d.value}>
-                  {d.label} — {d.hint}
+                  {d.label} — required: {d.hint}
                 </option>
               ))}
             </select>
@@ -335,6 +645,13 @@ export default function UploadPanel({ canManage }: { canManage: boolean }) {
             <button
               type="submit"
               disabled={blocked}
+              title={
+                missing.length > 0
+                  ? `Missing columns: ${missing.join(", ")}`
+                  : !file
+                    ? "Choose a file to upload"
+                    : undefined
+              }
               className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-white shadow-lift hover:bg-primary-600 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {uploading ? (
@@ -361,16 +678,22 @@ export default function UploadPanel({ canManage }: { canManage: boolean }) {
               </span>
               <span className="mx-1 text-border">|</span>
               {preview.headers.map((h) => {
-                const ok = !missing.includes(h.trim().toLowerCase());
+                const key = h.trim().toLowerCase().replace(/\s+/g, "_");
+                const canon = ALIAS_LOOKUP.get(key) ?? key;
+                const isRequired = (REQUIRED_COLUMNS[domain] ?? []).includes(canon);
+                const ok = !isRequired || !missing.includes(canon);
+                const aliased = canon !== key && ALIAS_LOOKUP.has(key);
                 return (
                   <span
                     key={h}
+                    title={aliased ? `Shown as: ${canon}` : undefined}
                     className={clsx(
                       "inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[11px]",
                       ok ? "bg-green-100 text-green-700" : "bg-warn-50 text-warn",
                     )}
                   >
                     {ok ? "✓" : "✗"} {h.trim()}
+                    {aliased && <span className="text-green-600/70">→{canon}</span>}
                   </span>
                 );
               })}

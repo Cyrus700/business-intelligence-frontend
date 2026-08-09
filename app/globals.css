@@ -17,12 +17,27 @@
   --color-warn-50: #fffbeb;
   --color-border: #e2e8f0;
 
+  /* Extended brand ramp — used by gradients, glows and chart series. */
+  --color-primary-100: #e0e7ff;
+  --color-primary-400: #818cf8;
+  --color-primary-700: #3730a3;
+  --color-violet: #8b5cf6;
+  --color-sky: #38bdf8;
+  --color-accent-600: #059669;
+  --color-danger: #ef4444;
+
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
   /* Soft, layered "premium light" elevation */
   --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px -12px rgba(15, 23, 42, 0.12);
   --shadow-lift: 0 1px 2px rgba(15, 23, 42, 0.05), 0 20px 40px -16px rgba(79, 70, 229, 0.22);
+  /* Reserved for the hero panel: deep, tinted, wide-spread. */
+  --shadow-hero:
+    0 2px 4px rgba(15, 23, 42, 0.04),
+    0 12px 24px -12px rgba(15, 23, 42, 0.14),
+    0 48px 80px -32px rgba(79, 70, 229, 0.28);
+  --shadow-glow: 0 0 0 1px rgba(79, 70, 229, 0.12), 0 12px 40px -12px rgba(79, 70, 229, 0.32);
 }
 
 @layer base {
@@ -62,6 +77,154 @@
     background: linear-gradient(180deg, var(--color-primary-50) 0%, transparent 60%);
   }
 
+  /* ── Premium surface kit ──────────────────────────────────────────
+     A small set of composable finishes. Each is one visual idea; stack
+     them on a container rather than inventing new one-off gradients. */
+
+  /* Frosted panel over the aurora — the default "floating card" finish. */
+  .surface-glass {
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.92) 0%,
+      rgba(255, 255, 255, 0.72) 100%
+    );
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    box-shadow: var(--shadow-card);
+  }
+
+  /* Hairline gradient border via a masked pseudo-element. */
+  .surface-ring {
+    position: relative;
+  }
+  .surface-ring::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      140deg,
+      rgba(79, 70, 229, 0.45),
+      rgba(56, 189, 248, 0.25) 45%,
+      rgba(16, 185, 129, 0.3)
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* Cursor-tracked spotlight. Needs --mx/--my from motion.ts pointerSpotlight. */
+  .surface-spotlight {
+    position: relative;
+    isolation: isolate;
+  }
+  .surface-spotlight::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(
+      340px circle at var(--mx, 50%) var(--my, 0%),
+      rgba(79, 70, 229, 0.1),
+      transparent 70%
+    );
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+    z-index: -1;
+  }
+  .surface-spotlight:hover::after {
+    opacity: 1;
+  }
+
+  /* Slow-drifting colour field behind the hero and CTA. */
+  .aurora {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .aurora span {
+    position: absolute;
+    display: block;
+    border-radius: 9999px;
+    filter: blur(72px);
+    opacity: 0.5;
+    will-change: transform;
+  }
+
+  /* Brand-tinted text for one emphasised phrase per heading — no more. */
+  .text-gradient {
+    background: linear-gradient(
+      100deg,
+      var(--color-primary) 0%,
+      var(--color-violet) 45%,
+      var(--color-sky) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Fine engineering grid, faded at the edges. Signals "instrument", not "poster". */
+  .grid-lines {
+    background-image:
+      linear-gradient(to right, rgba(15, 23, 42, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(15, 23, 42, 0.05) 1px, transparent 1px);
+    background-size: 64px 64px;
+    -webkit-mask-image: radial-gradient(80% 60% at 50% 30%, #000 0%, transparent 78%);
+    mask-image: radial-gradient(80% 60% at 50% 30%, #000 0%, transparent 78%);
+  }
+
+  /* Edge fade for horizontally scrolling strips (marquees, dimension bars). */
+  .edge-fade {
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 6rem,
+      #000 calc(100% - 6rem),
+      transparent
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 6rem,
+      #000 calc(100% - 6rem),
+      transparent
+    );
+  }
+
+  /* Live-data pulse used on "streaming" badges. */
+  .pulse-dot {
+    position: relative;
+  }
+  .pulse-dot::before {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border-radius: 9999px;
+    background: currentColor;
+    opacity: 0.28;
+    animation: pulse-ring 2s ease-out infinite;
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+  70%,
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+
   /* Retained for the auth brand panel only (not used on the landing page). */
   .mesh-glow {
     background:
@@ -76,6 +239,39 @@
     -webkit-mask-image: radial-gradient(70% 60% at 50% 40%, #000 0%, transparent 75%);
     mask-image: radial-gradient(70% 60% at 50% 40%, #000 0%, transparent 75%);
   }
+
+  /* Faint dot field for the dark CTA panel — same palette, low alpha. */
+  .dot-grid-light {
+    background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+    background-size: 26px 26px;
+    -webkit-mask-image: radial-gradient(75% 70% at 50% 40%, #000 0%, transparent 80%);
+    mask-image: radial-gradient(75% 70% at 50% 40%, #000 0%, transparent 80%);
+  }
+
+  /* Dashboard canvas — a whisper of brand hue over the soft base. */
+  .dashboard-bg {
+    background:
+      radial-gradient(1100px 520px at 85% -10%, rgba(79, 70, 229, 0.06), transparent 60%),
+      radial-gradient(900px 420px at -10% 110%, rgba(16, 185, 129, 0.05), transparent 55%),
+      var(--color-bg-soft);
+  }
+}
+
+@layer base {
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-ink-muted);
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
 }
 
 /* GSAP reveal: elements start hidden to avoid FOUC, JS animates them in.
@@ -87,6 +283,40 @@
   opacity: 1;
 }
 
+/* AI "generating" indicator: three dots with a staggered bounce. */
+.ai-typing {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding-block: 2px;
+}
+.ai-typing span {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.35;
+  animation: ai-typing-bounce 1.2s ease-in-out infinite;
+}
+.ai-typing span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.ai-typing span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+@keyframes ai-typing-bounce {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -94,5 +324,15 @@
   [data-reveal] {
     opacity: 1 !important;
     transform: none !important;
+  }
+  .ai-typing span {
+    animation: none;
+    opacity: 0.7;
+  }
+  .pulse-dot::before {
+    animation: none;
+  }
+  .aurora span {
+    opacity: 0.32;
   }
 }

@@ -10,12 +10,14 @@ export default function Reveal({
   children,
   delay = 0,
   y = 28,
+  scale,
   className,
   as: Tag = "div",
 }: {
   children: React.ReactNode;
   delay?: number;
   y?: number;
+  scale?: number;
   className?: string;
   as?: "div" | "span" | "li";
 }) {
@@ -25,18 +27,20 @@ export default function Reveal({
     () => {
       const el = ref.current;
       if (!el || prefersReducedMotion()) return;
-      gsap.fromTo(
-        el,
-        { y, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          duration: DUR.base,
-          ease: EASE.out,
-          delay,
-          scrollTrigger: revealTrigger(el),
-        },
-      );
+      const from: gsap.TweenVars = { y, opacity: 0 };
+      const to: gsap.TweenVars = {
+        y: 0,
+        opacity: 1,
+        duration: DUR.base,
+        ease: EASE.out,
+        delay,
+        scrollTrigger: revealTrigger(el),
+      };
+      if (scale) {
+        from.scale = scale;
+        to.scale = 1;
+      }
+      gsap.fromTo(el, from, to);
     },
     { scope: ref },
   );

@@ -23,15 +23,15 @@ export default function Panel({
       )}
     >
       {(title || action) && (
-        <header className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
-          <div>
-            {title && <h3 className="font-semibold text-ink">{title}</h3>}
+        <header className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3 border-b border-border px-5 py-4 sm:px-6">
+          <div className="min-w-0">
+            {title && <h3 className="font-semibold tracking-tight text-ink">{title}</h3>}
             {subtitle && <p className="mt-0.5 text-sm text-ink-soft">{subtitle}</p>}
           </div>
-          {action}
+          {action && <div className="shrink-0">{action}</div>}
         </header>
       )}
-      <div className={clsx("p-5", bodyClassName)}>{children}</div>
+      <div className={clsx("p-5 sm:p-6", bodyClassName)}>{children}</div>
     </section>
   );
 }

@@ -1,12 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { setToken, setSession, sessionFromToken } from "@/lib/auth";
 import { useAuth } from "@/lib/auth-context";
 import Link from "next/link";
 
 export default function AuthCallbackPage() {
+  return (
+    <Suspense>
+      <CallbackInner />
+    </Suspense>
+  );
+}
+
+function CallbackInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { refresh } = useAuth();

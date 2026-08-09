@@ -78,7 +78,7 @@ export default function LiveAnomalies({
               key={a.id}
               className="rounded-xl px-2 py-3 transition-colors hover:bg-bg-soft"
             >
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                 <span className="relative flex h-2.5 w-2.5 shrink-0">
                   {a.status === "open" && (
                     <span
@@ -113,7 +113,7 @@ export default function LiveAnomalies({
                   </span>
                 )}
                 {manage && a.status === "open" && (
-                  <span className="flex shrink-0 gap-1">
+                  <span className="ml-auto flex shrink-0 gap-1">
                     <button
                       onClick={() => patchMutation.mutate({ id: a.id, status: "acknowledged" })}
                       disabled={patchMutation.isPending}

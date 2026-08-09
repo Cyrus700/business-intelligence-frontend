@@ -4,14 +4,15 @@ import { useState } from "react";
 import { clsx } from "@/lib/cx";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
+import FloatingAiChat from "@/components/ai/FloatingAiChat";
 
 export default function DashboardChrome({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-bg-soft">
+    <div className="dashboard-bg min-h-screen">
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 lg:block">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 border-r border-border bg-white lg:block">
         <Sidebar />
       </aside>
 
@@ -25,13 +26,13 @@ export default function DashboardChrome({ children }: { children: React.ReactNod
         <div
           onClick={() => setMobileOpen(false)}
           className={clsx(
-            "absolute inset-0 bg-ink/40 transition-opacity",
+            "absolute inset-0 bg-ink/40 backdrop-blur-[2px] transition-opacity duration-300",
             mobileOpen ? "opacity-100" : "opacity-0",
           )}
         />
         <div
           className={clsx(
-            "absolute inset-y-0 left-0 w-64 transition-transform duration-300",
+            "absolute inset-y-0 left-0 w-72 max-w-[85vw] shadow-lift transition-transform duration-300",
             mobileOpen ? "translate-x-0" : "-translate-x-full",
           )}
         >
@@ -42,8 +43,12 @@ export default function DashboardChrome({ children }: { children: React.ReactNod
       {/* Main */}
       <div className="lg:pl-64">
         <Topbar onMenuClick={() => setMobileOpen(true)} />
-        <main className="px-4 py-6 sm:px-6 lg:px-8">{children}</main>
+        <main className="mx-auto w-full max-w-[1440px] px-4 py-6 sm:px-6 lg:px-8 xl:px-10">
+          {children}
+        </main>
       </div>
+
+      <FloatingAiChat />
     </div>
   );
 }

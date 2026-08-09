@@ -1,6 +1,7 @@
 "use client";
 
 import PageHeader from "@/components/dashboard/PageHeader";
+import Icon from "@/components/ui/Icon";
 import Greeting from "@/components/dashboard/Greeting";
 import Panel from "@/components/dashboard/Panel";
 import AiInsights from "@/components/dashboard/AiInsights";
@@ -29,7 +30,8 @@ export default function OverviewClient() {
         {(role) => (
           <>
             {role === "admin" && (
-              <div className="mb-4 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+              <div className="mb-4 flex flex-wrap items-center gap-x-1 gap-y-1 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                <Icon name="shield" className="mr-2 mt-0.5 h-5 w-5 shrink-0 text-primary" />
                 <p className="text-sm font-medium text-primary">
                   Admin view — you have full platform access.
                   <a href="/dashboard/users" className="ml-2 underline hover:no-underline">
@@ -43,11 +45,11 @@ export default function OverviewClient() {
               </div>
             )}
 
-            <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
               <Panel
                 title="Revenue vs expenses"
                 subtitle="Selected period"
-                className="lg:col-span-2"
+                className="md:col-span-2 xl:col-span-2"
               >
                 <RevenueExpenses />
               </Panel>
@@ -60,7 +62,7 @@ export default function OverviewClient() {
                 <Panel
                   title="Revenue forecast"
                   subtitle="30-day projection from the live model"
-                  className="lg:col-span-2"
+                  className="md:col-span-2 xl:col-span-2"
                 >
                   <LiveForecast />
                 </Panel>
@@ -86,9 +88,9 @@ export default function OverviewClient() {
 
               <Panel
                 title="Recent transactions"
-                className="lg:col-span-2"
+                className="md:col-span-2 xl:col-span-2"
                 action={
-                  <a href="/dashboard/analytics" className="text-sm font-medium text-primary">
+                  <a href="/dashboard/analytics" className="text-sm font-medium text-primary transition-colors hover:underline">
                     Explore
                   </a>
                 }
@@ -99,7 +101,7 @@ export default function OverviewClient() {
               <Panel
                 title="Low stock"
                 action={
-                  <a href="/dashboard/alerts" className="text-sm font-medium text-primary">
+                  <a href="/dashboard/alerts" className="text-sm font-medium text-primary transition-colors hover:underline">
                     View all
                   </a>
                 }
@@ -108,14 +110,14 @@ export default function OverviewClient() {
               </Panel>
             </div>
 
-            <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
               <Panel
                 title="Anomaly alerts"
                 subtitle="Live detection"
-                className="lg:col-span-2"
+                className="md:col-span-2 xl:col-span-2"
                 action={
                   role === "manager" || role === "admin" ? (
-                    <a href="/dashboard/alerts" className="text-sm font-medium text-primary">
+                    <a href="/dashboard/alerts" className="text-sm font-medium text-primary transition-colors hover:underline">
                       Manage
                     </a>
                   ) : undefined
@@ -129,7 +131,7 @@ export default function OverviewClient() {
                   title="Recommendations"
                   subtitle="Automated suggestions"
                   action={
-                    <a href="/dashboard/recommendations" className="text-sm font-medium text-primary">
+                    <a href="/dashboard/recommendations" className="text-sm font-medium text-primary transition-colors hover:underline">
                       View all
                     </a>
                   }
@@ -140,32 +142,32 @@ export default function OverviewClient() {
             </div>
 
             {role === "admin" && (
-              <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+              <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                 <Panel
                   title="Platform admin"
                   subtitle="System overview"
-                  className="lg:col-span-3"
+                  className="md:col-span-2 xl:col-span-3"
                 >
                   <div className="grid gap-4 sm:grid-cols-3">
                     <a
                       href="/dashboard/users"
-                      className="rounded-xl border border-border p-4 text-center hover:bg-bg-soft"
+                      className="group rounded-xl border border-border p-4 text-center transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lift"
                     >
-                      <span className="text-2xl font-semibold text-ink">Users</span>
+                      <span className="text-2xl font-semibold text-ink transition-colors group-hover:text-primary">Users</span>
                       <p className="text-xs text-ink-muted">Manage accounts and roles</p>
                     </a>
                     <a
                       href="/dashboard/permissions"
-                      className="rounded-xl border border-border p-4 text-center hover:bg-bg-soft"
+                      className="group rounded-xl border border-border p-4 text-center transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lift"
                     >
-                      <span className="text-2xl font-semibold text-ink">Roles</span>
+                      <span className="text-2xl font-semibold text-ink transition-colors group-hover:text-primary">Roles</span>
                       <p className="text-xs text-ink-muted">View permission matrix</p>
                     </a>
                     <a
                       href="/dashboard/data"
-                      className="rounded-xl border border-border p-4 text-center hover:bg-bg-soft"
+                      className="group rounded-xl border border-border p-4 text-center transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lift"
                     >
-                      <span className="text-2xl font-semibold text-ink">Data</span>
+                      <span className="text-2xl font-semibold text-ink transition-colors group-hover:text-primary">Data</span>
                       <p className="text-xs text-ink-muted">Sources & ETL pipelines</p>
                     </a>
                   </div>

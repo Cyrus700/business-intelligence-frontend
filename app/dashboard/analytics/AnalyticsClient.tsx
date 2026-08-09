@@ -52,15 +52,15 @@ export default function AnalyticsClient() {
 
       <RoleAnalytics>
         {(role) => (
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            <Panel title="Revenue by category" subtitle="Selected period" className="lg:col-span-2">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <Panel title="Revenue by category" subtitle="Selected period" className="md:col-span-2 xl:col-span-2">
               <CategoryBar />
             </Panel>
             <Panel title="Revenue by channel" subtitle="Selected period">
               <ChannelDonut />
             </Panel>
 
-            <Panel title="Revenue vs expenses" subtitle="Selected period" className="lg:col-span-2">
+            <Panel title="Revenue vs expenses" subtitle="Selected period" className="md:col-span-2 xl:col-span-2">
               <RevenueExpenses />
             </Panel>
 
@@ -87,7 +87,7 @@ export default function AnalyticsClient() {
               <Panel
                 title="Forecast Accuracy"
                 subtitle="Live model performance vs baseline"
-                className="lg:col-span-3"
+                className="md:col-span-2 xl:col-span-3"
               >
                 <ForecastAccuracy />
               </Panel>
@@ -96,7 +96,7 @@ export default function AnalyticsClient() {
             <Panel
               title="Sales explorer"
               subtitle="Products → transactions drill-down"
-              className="lg:col-span-3"
+              className="md:col-span-2 xl:col-span-3"
             >
               <SalesExplorer />
             </Panel>

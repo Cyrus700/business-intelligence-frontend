@@ -62,15 +62,16 @@ export function apiParams(f: Filters): Record<string, string | undefined> {
 export function RangePicker() {
   const { filters, setRange } = useFilters();
   return (
-    <div className="flex items-center gap-1 rounded-xl border border-border bg-white p-1 text-sm">
+    <div className="flex w-full items-center gap-1 rounded-xl border border-border bg-bg-soft p-1 sm:w-auto">
       {(Object.keys(RANGE_DAYS) as RangeKey[]).map((r) => (
         <button
           key={r}
           onClick={() => setRange(r)}
+          aria-pressed={filters.range === r}
           className={
             filters.range === r
-              ? "rounded-lg bg-primary px-3 py-1.5 font-medium text-white"
-              : "rounded-lg px-3 py-1.5 text-ink-soft hover:bg-bg-soft"
+              ? "flex-1 rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-primary shadow-card transition-colors sm:flex-none"
+              : "flex-1 rounded-lg px-3 py-1.5 text-sm text-ink-soft transition-colors hover:text-ink sm:flex-none"
           }
         >
           {r}

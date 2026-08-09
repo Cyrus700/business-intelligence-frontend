@@ -1,3 +1,11 @@
+// Shipped defaults for the RBAC catalog.
+//
+// These are no longer the source of truth: an admin edits the live matrix on
+// /dashboard/permissions and the server resolves it (see lib/rbac.ts and
+// app/core/rbac_defaults.py, which this file mirrors). What lives here is the
+// offline fallback — used before /rbac/matrix answers, if it fails, and for
+// the built-in roles' presentation metadata.
+
 export type Role = "analyst" | "manager" | "admin";
 
 export const ROLE_RANK: Record<Role, number> = {
@@ -168,6 +176,20 @@ export const ROLE_DESCRIPTIONS: Record<Role, { title: string; summary: string; c
     color: "bg-purple-100 text-purple-700",
   },
 };
+
+export type RoleInfo = { title: string; summary: string; color: string };
+
+/** Presentation metadata for a role, tolerant of admin-defined custom roles. */
+export function getRoleInfo(role: string | null): RoleInfo | null {
+  if (!role) return null;
+  return (
+    ROLE_DESCRIPTIONS[role as Role] ?? {
+      title: role.charAt(0).toUpperCase() + role.slice(1).replace(/[-_]/g, " "),
+      summary: "Custom role — see Roles & Permissions for its exact access.",
+      color: "bg-slate-100 text-slate-700",
+    }
+  );
+}
 
 export function getPermissionsForRole(role: Role | null): Permission[] {
   if (!role) return [];

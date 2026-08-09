@@ -106,8 +106,8 @@ export default function SettingsClient() {
     <>
       <PageHeader title="Settings" subtitle="Manage your profile, role and security." />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="space-y-4 lg:col-span-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="space-y-4 md:col-span-2">
           <Panel title="Profile">
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block">
