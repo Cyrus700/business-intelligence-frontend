@@ -30,6 +30,7 @@ export const queryKeys = {
   recommendations: { all: ["recommendations"] as const, list: () => ["recommendations", "list"] as const },
   dataSources: { all: ["data-sources"] as const, list: () => ["data-sources", "list"] as const },
   etlJobs: { all: ["etl-jobs"] as const, list: () => ["etl-jobs", "list"] as const },
+  uploads: { all: ["uploads"] as const, list: (page: number) => ["uploads", "list", page] as const },
   alerts: { all: ["alerts"] as const, rules: (p?: object) => ["alerts", "rules", p] as const },
   notifications: { all: ["notifications"] as const, list: (p?: object) => ["notifications", "list", p] as const },
   users: { all: ["users"] as const, list: () => ["users", "list"] as const, detail: (id: string) => ["users", "detail", id] as const },
@@ -259,6 +260,65 @@ export async function aiChat(body: AIChatRequest): Promise<AIChatResponse> {
   return apiPost<AIChatResponse>("/ai/chat", body);
 }
 
+export type ChatStreamEvents = {
+  conversationId: string;
+  onDelta: (text: string) => void;
+};
+
+// Streaming chat over the SSE endpoint. Resolves when the stream completes.
+// Returns the final conversation id (also delivered via the first event).
+export async function aiChatStream(
+  body: AIChatRequest,
+  onDelta: (text: string) => void,
+  signal?: AbortSignal,
+): Promise<string> {
+  const token = getToken();
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const res = await fetch(`${BASE}/ai/chat/stream`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+    signal,
+  });
+  if (!res.ok) {
+    const b = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new ApiError(res.status, String(b.detail ?? res.statusText));
+  }
+  if (!res.body) throw new ApiError(0, "Streaming not supported by this browser");
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let conversationId = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const events = buffer.split("\n\n");
+    buffer = events.pop() ?? "";
+    for (const raw of events) {
+      const line = raw.trim();
+      if (!line.startsWith("data:")) continue;
+      const payload = line.slice(5).trim();
+      if (!payload) continue;
+      let data: { conversation_id?: string; delta?: string; done?: boolean; error?: string };
+      try {
+        data = JSON.parse(payload);
+      } catch {
+        continue;
+      }
+      if (data.conversation_id) conversationId = data.conversation_id;
+      if (data.delta) onDelta(data.delta);
+      if (data.error) throw new ApiError(0, data.error);
+      if (data.done) return conversationId;
+    }
+  }
+  return conversationId;
+}
+
 export async function aiAnalyze(body: AIAnalyzeRequest): Promise<AIAnalyzeResponse> {
   return apiPost<AIAnalyzeResponse>("/ai/analyze", body);
 }
@@ -288,14 +348,37 @@ export type DataSource = {
   created_at: string;
 };
 
-export type UploadResult = {
+export type UploadReport = {
+  target_domain?: string;
+  kind?: string;
+  encoding?: string | null;
+  columns?: string[];
+  preview?: Array<Record<string, string>>;
+  warnings?: string[];
+  loaded?: number;
+  rejected?: number;
+  skipped_duplicates?: number;
+  details?: Array<{ row: number; reason: string }>;
+  file_size?: number;
+  error?: string;
+};
+
+export type UploadRecord = {
   id: string;
   file_name: string;
+  target_domain: "sales" | "finance" | "inventory" | null;
   status: string;
   row_count: number | null;
-  error_report: Record<string, unknown> | null;
+  error_report: UploadReport | null;
   created_at: string;
   etl_job_id: string | null;
+};
+
+export type PaginatedUploads = {
+  items: UploadRecord[];
+  total: number;
+  page: number;
+  page_size: number;
 };
 
 export type EtlJob = {
@@ -317,7 +400,7 @@ export async function uploadFile(
   file: File,
   domain: string,
   dataSourceId?: string,
-): Promise<UploadResult> {
+): Promise<UploadRecord> {
   const token = getToken();
   const headers: Record<string, string> = {};
   if (token) headers.Authorization = `Bearer ${token}`;
@@ -332,7 +415,19 @@ export async function uploadFile(
     const body = await res.json().catch(() => ({ detail: res.statusText }));
     throw new ApiError(res.status, String(body.detail ?? res.statusText));
   }
-  return res.json() as Promise<UploadResult>;
+  return res.json() as Promise<UploadRecord>;
+}
+
+export async function getUploads(params?: {
+  status?: string;
+  page?: number;
+  page_size?: number;
+}): Promise<PaginatedUploads> {
+  return apiGet<PaginatedUploads>("/uploads", params);
+}
+
+export async function runEtlSource(sourceId: string): Promise<EtlJob> {
+  return apiPost<EtlJob>(`/etl/run/${sourceId}`, undefined);
 }
 
 // ── P&L / Finance ────────────────────────────────────────────────

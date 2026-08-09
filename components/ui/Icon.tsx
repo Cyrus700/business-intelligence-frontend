@@ -18,6 +18,7 @@ type IconName =
   | "user"
   | "users"
   | "shield"
+  | "copy"
   | "close";
 
 const paths: Record<IconName, React.ReactNode> = {
@@ -113,6 +114,12 @@ const paths: Record<IconName, React.ReactNode> = {
     </>
   ),
   close: <path d="M6 6l12 12M18 6L6 18" />,
+  copy: (
+    <>
+      <rect x="9" y="9" width="12" height="12" rx="2" />
+      <path d="M5 15V5a2 2 0 012-2h10" />
+    </>
+  ),
   users: (
     <>
       <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
