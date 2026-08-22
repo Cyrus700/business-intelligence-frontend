@@ -24,11 +24,11 @@ import {
 export type AuthState = {
   user: UserProfile | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, fullName?: string | null) => Promise<void>;
+  login: (email: string, password: string) => Promise<UserProfile>;
+  signup: (email: string, password: string, fullName?: string | null) => Promise<UserProfile>;
   forgotPassword: (email: string) => Promise<void>;
   logout: () => void;
-  refresh: () => Promise<void>;
+  refresh: () => Promise<UserProfile | null>;
   updateProfile: (body: ProfileUpdate) => Promise<UserProfile>;
   getPreferences: () => Promise<UserPreferences>;
   updatePreferences: (body: Partial<UserPreferences>) => Promise<UserPreferences>;
@@ -46,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const profile = await validateSession();
     setUser(profile);
     setLoading(false);
+    return profile;
   }, []);
 
   useEffect(() => {
@@ -55,11 +56,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     const res = await apiLogin({ email, password });
     setUser(res.user);
+    return res.user;
   }, []);
 
   const signup = useCallback(async (email: string, password: string, fullName?: string | null) => {
     const res = await apiSignup({ email, password, full_name: fullName });
     setUser(res.user);
+    return res.user;
   }, []);
 
   const forgotPassword = useCallback(async (email: string) => {

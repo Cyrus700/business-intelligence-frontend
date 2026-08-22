@@ -15,11 +15,33 @@ export function useDataCoverage() {
   });
 }
 
+/** ETL watermark — when data was last refreshed by the pipeline. */
+export function useWatermark() {
+  return useQuery<{
+    last_refresh_at: string | null;
+    last_source: string | null;
+    last_trigger: string | null;
+    affected_range: { start: string; end: string } | null;
+    details: Record<string, unknown> | null;
+  }>({
+    queryKey: ["watermark"],
+    queryFn: () => apiGet("/watermark"),
+    staleTime: 30_000,
+  });
+}
+
 function formatDay(iso: string): string {
   return new Date(`${iso}T00:00:00`).toLocaleDateString(undefined, {
     day: "numeric",
     month: "short",
     year: "numeric",
+  });
+}
+
+function formatDateTime(iso: string): string {
+  return new Date(iso).toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
   });
 }
 
@@ -32,12 +54,13 @@ function formatDay(iso: string): string {
  */
 export default function DataFreshness({ className }: { className?: string }) {
   const { filters } = useFilters();
-  const { data } = useDataCoverage();
+  const { data: coverage } = useDataCoverage();
+  const { data: watermark } = useWatermark();
 
-  if (!data || !data.last_date) return null;
+  if (!coverage || !coverage.last_date) return null;
 
-  const behind = data.days_behind ?? 0;
-  const selectionStartsAfterData = filters.from > data.last_date;
+  const behind = coverage.days_behind ?? 0;
+  const selectionStartsAfterData = filters.from > coverage.last_date;
   const stale = behind > 0;
 
   // Nothing worth saying when the warehouse is current and the selected range
@@ -59,19 +82,23 @@ export default function DataFreshness({ className }: { className?: string }) {
         {selectionStartsAfterData ? (
           <>
             <strong>No data in the selected range.</strong> The warehouse holds data through{" "}
-            {formatDay(data.last_date)} — this is missing data, not zero sales.
+            {formatDay(coverage.last_date)} — this is missing data, not zero sales.
           </>
         ) : (
           <>
-            Data is current through <strong>{formatDay(data.last_date)}</strong> ({behind} day
+            Data is current through <strong>{formatDay(coverage.last_date)}</strong> ({behind} day
             {behind === 1 ? "" : "s"} behind today
-            {data.last_ingested_at && (
+            {watermark?.last_refresh_at && (
+              <>
+                ; last refreshed{" "}
+                {formatDateTime(watermark.last_refresh_at)}
+                {watermark.last_trigger && <>{" via "}{watermark.last_trigger}</>}
+              </>
+            )}
+            {coverage.last_ingested_at && !watermark?.last_refresh_at && (
               <>
                 ; last upload{" "}
-                {new Date(data.last_ingested_at).toLocaleString(undefined, {
-                  dateStyle: "medium",
-                  timeStyle: "short",
-                })}
+                {formatDateTime(coverage.last_ingested_at)}
               </>
             )}
             ).

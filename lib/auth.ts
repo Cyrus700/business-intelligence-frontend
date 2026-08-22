@@ -7,11 +7,52 @@ import type { UserProfile } from "@/lib/api";
 const SESSION_KEY = "insightful.session";
 const TOKEN_KEY = "insightful.token";
 
+// Presence cookie for the server-side route gate (proxy.ts). The JWT itself
+// stays in localStorage; the proxy only needs a cheap "is someone signed in"
+// signal, so a session-scoped marker suffices. The role cookie rides
+// alongside it so the proxy can also route /<role>/dashboard/* without
+// decoding the JWT at the edge — it's routing UX only, never an authority
+// boundary (the API re-checks the real JWT role on every request).
+const AUTH_COOKIE = "insightful.auth";
+const ROLE_COOKIE = "insightful.role";
+const AUTH_COOKIE_MAX_AGE = 60 * 60 * 12;
+
 export type Session = { name: string; email: string };
+
+function roleFromToken(token: string): string | null {
+  const payload = decodeTokenPayload(token);
+  const meta = payload?.app_metadata as Record<string, unknown> | undefined;
+  const role = meta?.role;
+  return typeof role === "string" ? role : null;
+}
+
+function setAuthCookie(token: string) {
+  if (typeof document === "undefined") return;
+  document.cookie = `${AUTH_COOKIE}=1; path=/; max-age=${AUTH_COOKIE_MAX_AGE}; samesite=lax`;
+  const role = roleFromToken(token);
+  document.cookie = role
+    ? `${ROLE_COOKIE}=${role}; path=/; max-age=${AUTH_COOKIE_MAX_AGE}; samesite=lax`
+    : `${ROLE_COOKIE}=; path=/; max-age=0; samesite=lax`;
+}
+
+function clearAuthCookie() {
+  if (typeof document === "undefined") return;
+  document.cookie = `${AUTH_COOKIE}=; path=/; max-age=0; samesite=lax`;
+  document.cookie = `${ROLE_COOKIE}=; path=/; max-age=0; samesite=lax`;
+}
+
+/** Reflects the current token into the auth cookie. Safe to call repeatedly. */
+export function syncSessionCookie() {
+  if (typeof window === "undefined") return;
+  const token = getToken();
+  if (token) setAuthCookie(token);
+  else clearAuthCookie();
+}
 
 export function setToken(token: string) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(TOKEN_KEY, token);
+  setAuthCookie(token);
 }
 
 export function getToken(): string | null {
@@ -24,6 +65,7 @@ export function getToken(): string | null {
 export function clearToken() {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(TOKEN_KEY);
+  clearAuthCookie();
 }
 
 export function clearAll() {

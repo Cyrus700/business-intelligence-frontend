@@ -31,6 +31,7 @@ export default function AreaRevenue({ data }: { data: RevenuePoint[] }) {
           Selected period
         </span>
       </div>
+    <div role="img" aria-label={`Revenue and expenses over time: ${data.map((d) => `${d.period} ${nprCompact(d.revenue)}`).join(", ")}`}>
     <ResponsiveContainer width="100%" height={300}>
       <ComposedChart data={data} margin={{ top: 10, right: 8, bottom: 0, left: -8 }}>
         <defs>
@@ -67,6 +68,7 @@ export default function AreaRevenue({ data }: { data: RevenuePoint[] }) {
         />
       </ComposedChart>
     </ResponsiveContainer>
+    </div>
     </div>
   );
 }

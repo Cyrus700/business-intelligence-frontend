@@ -14,7 +14,8 @@ export default function Sparkline({
   const points = data.map((v, i) => ({ i, v }));
 
   return (
-    <ResponsiveContainer width="100%" height={44}>
+    <div role="img" aria-label={`Trend: ${data.join(", ")}`}>
+      <ResponsiveContainer width="100%" height={44}>
       <AreaChart data={points} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
         <defs>
           <linearGradient id={`spark-${id}`} x1="0" y1="0" x2="0" y2="1">
@@ -32,6 +33,7 @@ export default function Sparkline({
           isAnimationActive
         />
       </AreaChart>
-    </ResponsiveContainer>
+      </ResponsiveContainer>
+    </div>
   );
 }

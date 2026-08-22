@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
 import AIClient from "./AIClient";
+import RequireAccess from "@/components/dashboard/RequireAccess";
 
 export const metadata: Metadata = { title: "AI Assistant · Insightful" };
 
 export default function AIPage() {
-  return <AIClient />;
+  return (
+    <RequireAccess permission="insights:view" label="AI Assistant">
+      <AIClient />
+    </RequireAccess>
+  );
 }

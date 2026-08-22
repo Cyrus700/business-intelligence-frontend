@@ -13,7 +13,7 @@ type Anomaly = {
   expected_value: string | null;
   deviation_score: string | null;
   severity: "high" | "medium" | "low";
-  status: "open" | "acknowledged" | "dismissed";
+  status: "open" | "acknowledged" | "dismissed" | "resolved";
   context: {
     date?: string;
     direction?: string;
@@ -23,6 +23,14 @@ type Anomaly = {
       isolation_forest?: number;
     };
   } | null;
+  explanation?: {
+    day?: string;
+    baseline_mode?: string;
+    primary?: { dimension: string; key: string; share_pct: number } | null;
+    secondary?: { dimension: string; key: string; share_pct: number } | null;
+    contributors?: { dimension: string; key: string; share_pct: number }[];
+  } | null;
+  resolved_at?: string | null;
 };
 
 const SEV: Record<string, { dot: string; label: string }> = {
@@ -128,6 +136,18 @@ export default function LiveAnomalies({
                     >
                       Dismiss
                     </button>
+                    <button
+                      onClick={() => patchMutation.mutate({ id: a.id, status: "resolved" })}
+                      disabled={patchMutation.isPending}
+                      className="rounded-lg border border-green-200 bg-green-50 px-2 py-1 text-xs text-green-700 hover:bg-green-100 disabled:opacity-50"
+                    >
+                      Resolve
+                    </button>
+                  </span>
+                )}
+                {manage && a.status === "resolved" && (
+                  <span className="ml-auto shrink-0 rounded-lg bg-green-50 px-2 py-1 text-xs font-medium text-green-700">
+                    Resolved{a.resolved_at ? ` ${new Date(a.resolved_at).toLocaleDateString()}` : ""}
                   </span>
                 )}
               </div>
@@ -150,6 +170,16 @@ export default function LiveAnomalies({
                     ) : null;
                   })()}
                 </div>
+              )}
+              {a.explanation?.primary && (
+                <p className="mt-1.5 ml-5 text-xs text-ink-soft">
+                  <span className="font-medium text-ink">Why:</span>{" "}
+                  {a.explanation.primary.key} ({a.explanation.primary.dimension}) drove{" "}
+                  {a.explanation.primary.share_pct.toFixed(0)}% of the deviation
+                  {a.explanation.secondary && (
+                    <> · also {a.explanation.secondary.key} ({a.explanation.secondary.share_pct.toFixed(0)}%)</>
+                  )}
+                </p>
               )}
             </li>
           );

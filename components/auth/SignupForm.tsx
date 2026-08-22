@@ -4,11 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { ApiError } from "@/lib/api";
+import { dashboardPath } from "@/lib/permissions";
 import Field from "./Field";
 import SocialButtons from "./SocialButtons";
 import Icon from "@/components/ui/Icon";
 
-export default function SignupForm() {
+export default function SignupForm({ next = "" }: { next?: string }) {
   const router = useRouter();
   const { signup } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -33,8 +34,8 @@ export default function SignupForm() {
 
     setLoading(true);
     try {
-      await signup(email, password, name || null);
-      router.push("/dashboard");
+      const profile = await signup(email, password, name || null);
+      router.push(next || dashboardPath(profile.role));
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);

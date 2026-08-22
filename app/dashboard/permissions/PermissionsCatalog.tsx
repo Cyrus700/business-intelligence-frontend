@@ -88,7 +88,7 @@ export default function PermissionsCatalog({
                 <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-muted">
                   {group}
                 </h4>
-                <div className="overflow-hidden rounded-xl border border-border">
+                <div className="overflow-x-auto rounded-xl border border-border">
                   <table className="w-full min-w-[560px] text-left text-sm">
                     <tbody className="divide-y divide-border">
                       {perms.map((p) => (

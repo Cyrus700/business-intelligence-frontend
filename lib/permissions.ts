@@ -8,6 +8,19 @@
 
 export type Role = "analyst" | "manager" | "admin";
 
+// Roles aren't limited to the three built-ins — an admin can define custom
+// roles at runtime (app/core/rbac_defaults.py / the dynamic RBAC catalog),
+// slugged with this same pattern server-side. Route prefixes below accept any
+// valid slug, not just the shipped three.
+export const ROLE_SLUG_PATTERN = /^[a-z][a-z0-9_-]{1,31}$/;
+
+/** URL for a role's dashboard, or a sub-page under it (e.g. "/analytics"). */
+export function dashboardPath(role: string | null | undefined, subpath = ""): string {
+  const base = role && ROLE_SLUG_PATTERN.test(role) ? `/${role}/dashboard` : "/dashboard";
+  if (!subpath || subpath === "/") return base;
+  return `${base}${subpath.startsWith("/") ? subpath : `/${subpath}`}`;
+}
+
 export const ROLE_RANK: Record<Role, number> = {
   analyst: 1,
   manager: 2,
@@ -32,6 +45,9 @@ export const PERMISSIONS: Record<Role, Permission[]> = {
     "notifications:read",
     "reports:view",
     "reports:download",
+    "quality:view",
+    "quality:resolve",
+    "ml:monitor",
   ],
   manager: [
     "dashboard:view",
@@ -55,6 +71,10 @@ export const PERMISSIONS: Record<Role, Permission[]> = {
     "reports:generate",
     "uploads:create",
     "etl:manage",
+    "quality:view",
+    "quality:run",
+    "quality:resolve",
+    "ml:monitor",
   ],
   admin: [
     "dashboard:view",
@@ -82,7 +102,13 @@ export const PERMISSIONS: Record<Role, Permission[]> = {
     "users:manage",
     "data-sources:manage",
     "etl:manage",
+    "quality:view",
+    "quality:run",
+    "quality:resolve",
     "audit-logs:view",
+    "ml:monitor",
+    "health:system",
+    "ai:usage",
   ],
 };
 
@@ -121,6 +147,7 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
       { key: "anomalies:view", label: "View anomalies", description: "See detected anomaly alerts" },
       { key: "anomalies:update", label: "Dismiss anomalies", description: "Acknowledge or dismiss anomaly alerts" },
       { key: "trends:view", label: "View trends", description: "See trend analysis" },
+      { key: "ml:monitor", label: "View ML monitoring", description: "See model registry, backtest and drift status" },
     ],
   },
   {
@@ -148,6 +175,9 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
       { key: "uploads:create", label: "Upload data", description: "Upload CSV and Excel data files" },
       { key: "etl:manage", label: "Manage ETL", description: "Run and monitor ETL pipelines" },
       { key: "data-sources:manage", label: "Manage data sources", description: "Add and configure data sources" },
+      { key: "quality:view", label: "View data quality", description: "See data quality score, history and issues" },
+      { key: "quality:run", label: "Run quality audits", description: "Trigger a manual data-quality audit run" },
+      { key: "quality:resolve", label: "Resolve quality issues", description: "Acknowledge or resolve data-quality issues" },
     ],
   },
   {
@@ -155,6 +185,8 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
     permissions: [
       { key: "users:manage", label: "Manage users", description: "Create, edit and deactivate users" },
       { key: "audit-logs:view", label: "View audit logs", description: "See system audit trail" },
+      { key: "health:system", label: "View system health", description: "See API, DB, storage, ETL and AI component health" },
+      { key: "ai:usage", label: "View AI usage", description: "See AI provider calls, latency, failures and cost" },
     ],
   },
 ];

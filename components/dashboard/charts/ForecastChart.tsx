@@ -43,6 +43,7 @@ export default function ForecastChart({ data }: { data: ForecastPoint[] }) {
           90% confidence
         </span>
       </div>
+    <div role="img" aria-label={`Sales forecast with 90% confidence band, ${data.length} day outlook`}>
     <ResponsiveContainer width="100%" height={280}>
       <ComposedChart data={data} margin={{ top: 10, right: 8, bottom: 0, left: -12 }}>
         <CartesianGrid vertical={false} stroke={GRID_STROKE} strokeDasharray="4 4" />
@@ -90,6 +91,7 @@ export default function ForecastChart({ data }: { data: ForecastPoint[] }) {
         />
       </ComposedChart>
     </ResponsiveContainer>
+    </div>
     </div>
   );
 }

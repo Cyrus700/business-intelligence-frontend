@@ -93,7 +93,7 @@ function Table({ rows }: { rows: string[][] }) {
         <thead>
           <tr className="border-b border-border bg-bg-soft">
             {head.map((c, i) => (
-              <th key={i} className="px-3 py-2 font-semibold text-ink">{renderInline(c)}</th>
+              <th key={i} className="px-3 py-2 font-semibold text-ink" scope="col">{renderInline(c)}</th>
             ))}
           </tr>
         </thead>

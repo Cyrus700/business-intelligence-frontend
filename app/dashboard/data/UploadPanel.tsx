@@ -703,7 +703,7 @@ export default function UploadPanel({ canManage }: { canManage: boolean }) {
                 <thead className="sticky top-0 bg-white">
                   <tr className="border-b border-border text-ink-muted">
                     {preview.headers.map((h) => (
-                      <th key={h} className="max-w-44 truncate px-3.5 py-2 font-semibold">
+                      <th key={h} className="max-w-44 truncate px-3.5 py-2 font-semibold" scope="col">
                         {h.trim()}
                       </th>
                     ))}

@@ -36,14 +36,16 @@ export default function TransactionsTable({
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[560px] text-left text-sm">
+<caption className="sr-only">Recent transactions</caption>
+<caption className="sr-only">Recent transactions</caption>
         <thead>
           <tr className="text-xs uppercase tracking-wide text-ink-muted">
-            <th className="whitespace-nowrap pb-3 font-medium">Date</th>
-            <th className="whitespace-nowrap pb-3 font-medium">Product</th>
-            <th className="whitespace-nowrap pb-3 font-medium">Customer</th>
-            <th className="whitespace-nowrap pb-3 font-medium">Channel</th>
-            <th className="whitespace-nowrap pb-3 text-right font-medium">Qty</th>
-            <th className="whitespace-nowrap pb-3 text-right font-medium">Amount</th>
+            <th className="whitespace-nowrap pb-3 font-medium" scope="col">Date</th>
+            <th className="whitespace-nowrap pb-3 font-medium" scope="col">Product</th>
+            <th className="whitespace-nowrap pb-3 font-medium" scope="col">Customer</th>
+            <th className="whitespace-nowrap pb-3 font-medium" scope="col">Channel</th>
+            <th className="whitespace-nowrap pb-3 text-right font-medium" scope="col">Qty</th>
+            <th className="whitespace-nowrap pb-3 text-right font-medium" scope="col">Amount</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border">

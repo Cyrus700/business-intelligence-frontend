@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { clsx } from "@/lib/cx";
 import { useAuth } from "@/lib/auth-context";
-import { useRole } from "@/lib/use-role";
+import { useRole, useDashboardBase } from "@/lib/use-role";
 import { getRoleInfo, type Role } from "@/lib/permissions";
 import Icon from "@/components/ui/Icon";
 
@@ -18,6 +18,7 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
   const router = useRouter();
   const { user, logout } = useAuth();
   const role = useRole();
+  const base = useDashboardBase();
   const [menuOpen, setMenuOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -58,6 +59,7 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
         <input
           type="search"
           placeholder="Search metrics, reports, customers…"
+          aria-label="Search"
           className="h-10 w-full rounded-xl border border-border bg-bg-soft pl-9 pr-16 text-sm text-ink placeholder:text-ink-muted focus:border-primary focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/10"
         />
         <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-md border border-border bg-white px-1.5 py-0.5 text-[10px] font-medium text-ink-muted md:block">
@@ -107,13 +109,11 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
             </span>
           </button>
 
-          <div
-            role="menu"
-            className={clsx(
-              "absolute right-0 mt-2 w-60 origin-top-right rounded-xl border border-border bg-white p-1.5 shadow-lift transition-all duration-200",
-              menuOpen ? "scale-100 opacity-100" : "pointer-events-none scale-95 opacity-0",
-            )}
-          >
+          {menuOpen && (
+            <div
+              role="menu"
+              className="absolute right-0 mt-2 w-60 origin-top-right rounded-xl border border-border bg-white p-1.5 shadow-lift"
+            >
             <div className="px-3 py-2">
               <p className="truncate text-sm font-medium text-ink">{name}</p>
               <p className="truncate text-xs text-ink-muted">{email}</p>
@@ -131,7 +131,7 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
             <div className="my-1 h-px bg-border" />
             <button
               role="menuitem"
-              onClick={() => { router.push("/dashboard/settings"); setMenuOpen(false); }}
+              onClick={() => { router.push(`${base}/settings`); setMenuOpen(false); }}
               className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-ink-soft transition-colors hover:bg-bg-soft hover:text-ink"
             >
               <Icon name="gear" className="h-4 w-4" /> Settings
@@ -139,7 +139,7 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
             {role === "admin" && (
               <button
                 role="menuitem"
-                onClick={() => { router.push("/dashboard/users"); setMenuOpen(false); }}
+                onClick={() => { router.push(`${base}/users`); setMenuOpen(false); }}
                 className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-ink-soft transition-colors hover:bg-bg-soft hover:text-ink"
               >
                 <Icon name="users" className="h-4 w-4" /> Manage users
@@ -154,6 +154,7 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
               <Icon name="logout" className="h-4 w-4" /> Log out
             </button>
           </div>
+        )}
         </div>
       </div>
     </header>

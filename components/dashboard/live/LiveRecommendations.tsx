@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { apiGet, queryKeys } from "@/lib/api";
 import { clsx } from "@/lib/cx";
+import { useDashboardBase } from "@/lib/use-role";
 import { PanelSkeleton, PanelError } from "./Status";
 
 type Recommendation = {
@@ -20,6 +21,7 @@ const SEV_DOT: Record<string, { dot: string; label: string }> = {
 };
 
 export default function LiveRecommendations({ limit = 4 }: { limit?: number }) {
+  const base = useDashboardBase();
   const { data, isLoading, error } = useQuery<Recommendation[]>({
     queryKey: queryKeys.recommendations.list(),
     queryFn: () => apiGet<Recommendation[]>("/recommendations"),
@@ -34,7 +36,7 @@ export default function LiveRecommendations({ limit = 4 }: { limit?: number }) {
     return (
       <div className="flex flex-col items-center py-6 text-center text-sm text-ink-muted">
         <p>No recommendations yet.</p>
-        <Link href="/dashboard/recommendations" className="mt-2 text-primary underline">
+        <Link href={`${base}/recommendations`} className="mt-2 text-primary underline">
           Generate recommendations
         </Link>
       </div>
@@ -65,7 +67,7 @@ export default function LiveRecommendations({ limit = 4 }: { limit?: number }) {
       </ul>
       <div className="mt-2 border-t border-border pt-2 text-center">
         <Link
-          href="/dashboard/recommendations"
+          href={`${base}/recommendations`}
           className="text-xs font-medium text-primary hover:underline"
         >
           View all recommendations →

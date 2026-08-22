@@ -87,13 +87,15 @@ export default function SourcesPanel({ isAdmin }: { isAdmin: boolean }) {
       ) : (
         <div className="-mx-5 -mb-5 overflow-x-auto">
           <table className="w-full text-left text-sm">
+<caption className="sr-only">Data sources</caption>
+<caption className="sr-only">Data sources</caption>
             <thead>
               <tr className="border-b border-border text-xs font-semibold uppercase text-ink-muted">
-                <th className="py-3 pl-5 pr-3">Name</th>
-                <th className="py-3 pr-3">Type</th>
-                <th className="py-3 pr-3">Domain</th>
-                <th className="py-3 pr-3">Status</th>
-                <th className="py-3 pr-5 text-right">Run</th>
+                <th className="py-3 pl-5 pr-3" scope="col">Name</th>
+                <th className="py-3 pr-3" scope="col">Type</th>
+                <th className="py-3 pr-3" scope="col">Domain</th>
+                <th className="py-3 pr-3" scope="col">Status</th>
+                <th className="py-3 pr-5 text-right" scope="col">Run</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/70">

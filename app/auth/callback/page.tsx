@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { setToken, setSession, sessionFromToken } from "@/lib/auth";
 import { useAuth } from "@/lib/auth-context";
+import { dashboardPath } from "@/lib/permissions";
 import Link from "next/link";
 
 export default function AuthCallbackPage() {
@@ -35,8 +36,8 @@ function CallbackInner() {
 
     setToken(token);
     setSession(session);
-    refresh().then(() => {
-      router.replace("/dashboard");
+    refresh().then((profile) => {
+      router.replace(dashboardPath(profile?.role));
     });
   }, [searchParams, router, refresh]);
 

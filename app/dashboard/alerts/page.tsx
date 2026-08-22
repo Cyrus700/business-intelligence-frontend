@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
 import AlertsClient from "./AlertsClient";
+import RequireAccess from "@/components/dashboard/RequireAccess";
 
 export const metadata: Metadata = { title: "Alerts · Insightful" };
 
 export default function AlertsPage() {
-  return <AlertsClient />;
+  return (
+    <RequireAccess permission="anomalies:view" label="Alerts">
+      <AlertsClient />
+    </RequireAccess>
+  );
 }

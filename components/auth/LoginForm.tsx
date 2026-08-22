@@ -5,11 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { ApiError } from "@/lib/api";
+import { dashboardPath } from "@/lib/permissions";
 import Field from "./Field";
 import SocialButtons from "./SocialButtons";
 import Icon from "@/components/ui/Icon";
 
-export default function LoginForm() {
+export default function LoginForm({ next = "" }: { next?: string }) {
   const router = useRouter();
   const { login } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -29,8 +30,8 @@ export default function LoginForm() {
 
     setLoading(true);
     try {
-      await login(email, password);
-      router.push("/dashboard");
+      const profile = await login(email, password);
+      router.push(next || dashboardPath(profile.role));
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);

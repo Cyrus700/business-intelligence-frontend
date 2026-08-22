@@ -7,6 +7,7 @@ import {
   type Role,
   ROLE_RANK,
   roleCan,
+  dashboardPath,
   getPermissionsForRole,
 } from "@/lib/permissions";
 import { useMyAccess } from "@/lib/rbac";
@@ -49,13 +50,21 @@ export function usePermissions(): Permission[] {
 }
 
 /** Capability check against the live matrix — prefer this over role checks. */
-export function useCan(permission: Permission): boolean {
-  return usePermissions().includes(permission);
+export function useCan(permission?: Permission): boolean {
+  const permissions = usePermissions();
+  if (!permission) return true;
+  return permissions.includes(permission);
 }
 
 export function hasMinRole(userRole: Role | null, minimum: Role): boolean {
   if (!userRole) return false;
   return ROLE_RANK[userRole] >= ROLE_RANK[minimum];
+}
+
+/** Base path for the signed-in user's own dashboard, e.g. "/admin/dashboard". */
+export function useDashboardBase(): string {
+  const role = useRole();
+  return dashboardPath(role);
 }
 
 export { roleCan as can };

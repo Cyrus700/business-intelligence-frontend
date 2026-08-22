@@ -69,7 +69,7 @@ export default function Comparison() {
         <table className="w-full min-w-[640px] overflow-hidden rounded-2xl border border-border bg-white text-left shadow-card">
           <thead>
             <tr data-head-row className="border-b border-border">
-              <th className="p-4 text-sm font-medium text-ink-soft">Feature</th>
+              <th className="p-4 text-sm font-medium text-ink-soft" scope="col">Feature</th>
               {COMPARISON.columns.map((col, i) => (
                 <th
                   key={col}
@@ -77,7 +77,7 @@ export default function Comparison() {
                     "p-4 text-sm font-semibold",
                     i === lastCol ? "bg-primary-50 text-primary" : "text-ink",
                   )}
-                >
+                 scope="col">
                   {col}
                 </th>
               ))}

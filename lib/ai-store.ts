@@ -6,6 +6,7 @@
 
 import { create } from "zustand";
 import {
+  ApiError,
   aiChat,
   aiChatStream,
   getConversationMessages,
@@ -14,6 +15,15 @@ import {
   type AIMessage,
 } from "@/lib/api";
 import { polishReply } from "@/lib/reply-polish";
+
+// The activeId can go stale if the signed-in identity changes underneath it
+// (e.g. a different user logs in from another tab — auth tokens live in
+// localStorage, shared across tabs). The backend correctly 404s a
+// conversation that no longer belongs to the caller; treat that as "start a
+// new conversation" rather than surfacing a raw error.
+function isStaleConversation(e: unknown): boolean {
+  return e instanceof ApiError && e.status === 404;
+}
 
 // Stable, render-safe id generator for ephemeral chat bubbles.
 let msgSeq = 0;
@@ -117,16 +127,28 @@ export const useAiStore = create<AiStore & AiActions>()((set, get) => ({
     const patchAssistant = (content: string) =>
       set({ messages: get().messages.map((m) => (m.id === assistantMsg.id ? { ...m, content } : m)) });
 
+    const onChunk = (chunk: string) => {
+      receivedAny = true;
+      const current = get().messages.find((m) => m.id === assistantMsg.id)?.content ?? "";
+      patchAssistant(polishReply(current + chunk));
+    };
+
     try {
-      const convId = await aiChatStream(
-        { conversation_id: get().activeId ?? undefined, message: trimmed },
-        (chunk) => {
-          receivedAny = true;
-          const current = get().messages.find((m) => m.id === assistantMsg.id)?.content ?? "";
-          patchAssistant(polishReply(current + chunk));
-        },
-        ctrl.signal,
-      );
+      let convId: string;
+      try {
+        convId = await aiChatStream(
+          { conversation_id: get().activeId ?? undefined, message: trimmed },
+          onChunk,
+          ctrl.signal,
+        );
+      } catch (e) {
+        if (isStaleConversation(e) && get().activeId) {
+          set({ activeId: null });
+          convId = await aiChatStream({ conversation_id: undefined, message: trimmed }, onChunk, ctrl.signal);
+        } else {
+          throw e;
+        }
+      }
       set({ activeId: convId });
       const last = get().messages.at(-1);
       if (last?.id === assistantMsg.id && !last.content) patchAssistant("_(Empty response)_");
@@ -139,8 +161,9 @@ export const useAiStore = create<AiStore & AiActions>()((set, get) => ({
       } else if (!receivedAny) {
         // Streaming unavailable/errored before any text — fall back to the non-streaming endpoint.
         try {
+          const staleRetry = isStaleConversation(e) && get().activeId;
           const res = await aiChat({
-            conversation_id: get().activeId ?? undefined,
+            conversation_id: staleRetry ? undefined : (get().activeId ?? undefined),
             message: trimmed,
           });
           set({ activeId: res.conversation_id });

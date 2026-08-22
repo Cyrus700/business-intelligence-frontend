@@ -13,7 +13,7 @@ const LABELS: Record<string, string> = {
 };
 
 export default function ChannelDonut() {
-  const { filters } = useFilters();
+  const { filters, addMultiDimension, removeMultiDimension } = useFilters();
   const { data, error, loading } = useApi<DimensionRow[]>(
     "/sales/by-channel",
     apiParams(filters),
@@ -24,6 +24,15 @@ export default function ChannelDonut() {
   if (data.length === 0) return <EmptyState />;
 
   const total = data.reduce((s, r) => s + r.revenue, 0);
+  const active = (filters.channels ?? [])[0];
+  const toggle = (channel: string) => {
+    if ((filters.channels ?? []).includes(channel)) {
+      removeMultiDimension("channels", channel);
+    } else {
+      addMultiDimension("channels", channel);
+    }
+  };
+
   return (
     <DonutSources
       data={data.map((r) => ({
@@ -33,6 +42,11 @@ export default function ChannelDonut() {
       }))}
       centerLabel={nprCompact(total)}
       centerSub="revenue"
+      onSliceClick={(name) => {
+        const raw = data.find((r) => (LABELS[r.key] ?? r.key) === name)?.key ?? name;
+        toggle(raw);
+      }}
+      activeSlice={active ? LABELS[active] ?? active : undefined}
     />
   );
 }

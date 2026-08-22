@@ -5,8 +5,9 @@ import { usePathname } from "next/navigation";
 import { clsx } from "@/lib/cx";
 import { BRAND } from "@/lib/content";
 import { DASH_NAV } from "@/lib/dashboard-nav";
-import { useRole, hasMinRole } from "@/lib/use-role";
+import { useCan, hasMinRole } from "@/lib/use-role";
 import { useAuth } from "@/lib/auth-context";
+import { dashboardPath } from "@/lib/permissions";
 import Icon from "@/components/ui/Icon";
 import BrandLogo from "@/components/ui/BrandLogo";
 
@@ -14,18 +15,34 @@ type IconName = Parameters<typeof Icon>[0]["name"];
 
 export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
-  const role = useRole();
   const { user } = useAuth();
+  // DASH_NAV hrefs are written against the underlying page tree
+  // ("/dashboard/analytics"); resolve them to this account's role-prefixed
+  // URL ("/admin/dashboard/analytics") so links, active-state and the URL
+  // bar all agree with proxy.ts's routing.
+  const base = dashboardPath(user?.role);
+  const href = (navHref: string) => dashboardPath(user?.role, navHref.replace(/^\/dashboard/, ""));
+  const can = {
+    "dashboard:view": useCan("dashboard:view"),
+    "insights:view": useCan("insights:view"),
+    "timeseries:view": useCan("timeseries:view"),
+    "reports:view": useCan("reports:view"),
+    "anomalies:view": useCan("anomalies:view"),
+    "uploads:create": useCan("uploads:create"),
+    "users:manage": useCan("users:manage"),
+  } as const;
 
   const visible = DASH_NAV.filter(
-    (item) => !item.adminOnly || hasMinRole(role, "admin"),
+    (item) =>
+      (item.permission ? can[item.permission as keyof typeof can] : true) &&
+      (!item.minRole || hasMinRole(user?.role ?? null, item.minRole)),
   );
 
   return (
     <div className="flex h-full flex-col overflow-y-auto bg-white">
       <div className="flex h-16 shrink-0 items-center px-6">
         <Link
-          href="/dashboard"
+          href={base}
           onClick={onNavigate}
           aria-label={`${BRAND.name} dashboard`}
           className="flex items-center"
@@ -36,14 +53,13 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
       <nav className="flex-1 space-y-1 px-3 py-4">
         {visible.map((item) => {
+          const resolvedHref = href(item.href);
           const active =
-            item.href === "/dashboard"
-              ? pathname === "/dashboard"
-              : pathname.startsWith(item.href);
+            item.href === "/dashboard" ? pathname === base : pathname.startsWith(resolvedHref);
           return (
             <Link
               key={item.href}
-              href={item.href}
+              href={resolvedHref}
               onClick={onNavigate}
               className={clsx(
                 "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
@@ -76,7 +92,7 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           Unlock unlimited sources, forecasting & alerts.
         </p>
         <Link
-          href="/dashboard/settings"
+          href={href("/dashboard/settings")}
           onClick={onNavigate}
           className="mt-3 inline-flex h-8 items-center rounded-lg bg-white px-3 text-xs font-medium text-primary transition-transform hover:-translate-y-0.5"
         >
@@ -89,7 +105,8 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           {user?.full_name ?? user?.email ?? "Account"}
         </p>
         <p className="truncate text-[11px] text-ink-muted">
-          {user?.email} · {role ? `${role[0].toUpperCase()}${role.slice(1)}` : "Analyst"}
+          {user?.email} ·{" "}
+          {user?.role ? `${user.role[0].toUpperCase()}${user.role.slice(1)}` : "Analyst"}
         </p>
       </div>
     </div>

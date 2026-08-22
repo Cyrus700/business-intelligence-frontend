@@ -113,10 +113,12 @@ function ReportRow({ upload }: { upload: UploadRecord }) {
           </summary>
           <div className="mt-1 overflow-x-auto rounded-lg border border-border">
             <table className="w-full text-left">
+<caption className="sr-only">Upload history summary</caption>
+<caption className="sr-only">Upload history summary</caption>
               <thead>
                 <tr className="border-b border-border bg-bg-soft/60 text-ink-muted">
                   {(report.columns ?? []).map((c) => (
-                    <th key={c} className="max-w-40 truncate px-2.5 py-1.5 font-semibold">
+                    <th key={c} className="max-w-40 truncate px-2.5 py-1.5 font-semibold" scope="col">
                       {c}
                     </th>
                   ))}
@@ -214,14 +216,15 @@ export default function UploadHistory({ canManage }: { canManage: boolean }) {
       ) : (
         <div className="-mx-5 -mb-5 overflow-x-auto">
           <table className="w-full text-left text-sm">
+<caption className="sr-only">Upload logs</caption>
             <thead>
               <tr className="border-b border-border text-xs font-semibold uppercase text-ink-muted">
-                <th className="py-3 pl-5 pr-3">File</th>
-                <th className="py-3 pr-3">Domain</th>
-                <th className="py-3 pr-3">Rows</th>
-                <th className="py-3 pr-3">Status</th>
-                <th className="py-3 pr-3">Uploaded</th>
-                <th className="py-3 pr-5 text-right">Report</th>
+                <th className="py-3 pl-5 pr-3" scope="col">File</th>
+                <th className="py-3 pr-3" scope="col">Domain</th>
+                <th className="py-3 pr-3" scope="col">Rows</th>
+                <th className="py-3 pr-3" scope="col">Status</th>
+                <th className="py-3 pr-3" scope="col">Uploaded</th>
+                <th className="py-3 pr-5 text-right" scope="col">Report</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/70">
@@ -276,6 +279,7 @@ function FragmentRow({
             type="button"
             onClick={onToggle}
             aria-label="Toggle validation report"
+            aria-expanded={open}
             className="rounded-lg p-1.5 text-ink-muted hover:bg-border/50 hover:text-ink"
           >
             <Icon name="arrow" className={clsx("h-4 w-4 transition-transform", open && "rotate-90")} />

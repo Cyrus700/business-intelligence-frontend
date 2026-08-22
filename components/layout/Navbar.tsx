@@ -7,6 +7,7 @@ import { useGSAP } from "@gsap/react";
 import { clsx } from "@/lib/cx";
 import { DUR, EASE, prefersReducedMotion } from "@/lib/motion";
 import { useAuth } from "@/lib/auth-context";
+import { dashboardPath } from "@/lib/permissions";
 import { BRAND, NAV_LINKS } from "@/lib/content";
 import Button from "@/components/ui/Button";
 import Icon from "@/components/ui/Icon";
@@ -14,6 +15,7 @@ import BrandLogo from "@/components/ui/BrandLogo";
 
 export default function Navbar() {
   const { user } = useAuth();
+  const dashHref = dashboardPath(user?.role);
   const root = useRef<HTMLElement>(null);
   const menu = useRef<HTMLDivElement>(null);
   const [scrolled, setScrolled] = useState(false);
@@ -144,7 +146,7 @@ export default function Navbar() {
 
         <div className="hidden items-center gap-3 md:flex">
           {user ? (
-            <Button href="/dashboard" variant="primary" size="md">
+            <Button href={dashHref} variant="primary" size="md">
               Dashboard
               <Icon name="arrow" className="h-4 w-4" />
             </Button>
@@ -212,7 +214,7 @@ export default function Navbar() {
           ))}
           <li className="mt-2 flex gap-3 px-3">
             {user ? (
-              <Button href="/dashboard" variant="primary" size="md" className="flex-1">
+              <Button href={dashHref} variant="primary" size="md" className="flex-1">
                 Dashboard
               </Button>
             ) : (

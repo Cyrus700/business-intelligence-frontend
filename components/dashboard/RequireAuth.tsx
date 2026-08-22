@@ -3,14 +3,21 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { syncSessionCookie } from "@/lib/auth";
 
 export default function RequireAuth({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, loading } = useAuth();
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.replace("/login");
+    if (!loading) {
+      if (user) {
+        // Mirrors the localStorage token into the auth cookie so the
+        // server-side proxy gate stays in sync (OAuth/any session source).
+        syncSessionCookie();
+      } else {
+        router.replace("/login");
+      }
     }
   }, [loading, user, router]);
 

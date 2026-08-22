@@ -236,7 +236,7 @@ export default function MatrixEditor({
             <table className="w-full min-w-[640px] text-left text-sm">
               <thead className="sticky top-0 z-10 bg-white">
                 <tr className="border-b border-border">
-                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-ink-muted">
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-ink-muted" scope="col">
                     Permission
                   </th>
                   {matrix.roles.map((role) => {
@@ -244,7 +244,7 @@ export default function MatrixEditor({
                     const allKeys = rows.map((p) => p.key);
                     const allOn = allKeys.every((k) => draft[role.name]?.has(k));
                     return (
-                      <th key={role.name} className="px-3 py-3 text-center align-top">
+                      <th key={role.name} className="px-3 py-3 text-center align-top" scope="col">
                         <span
                           className={clsx(
                             "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold",

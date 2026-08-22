@@ -6,7 +6,7 @@ import Panel from "@/components/dashboard/Panel";
 import LogoutButton from "@/components/dashboard/LogoutButton";
 import RoleSection from "@/components/dashboard/role/RoleSection";
 import { useAuth } from "@/lib/auth-context";
-import { useRole, hasMinRole } from "@/lib/use-role";
+import { useRole, hasMinRole, useDashboardBase } from "@/lib/use-role";
 import type { UserPreferences } from "@/lib/auth";
 
 const inputCls =
@@ -29,11 +29,17 @@ function Toggle({
         <span className="block text-sm font-medium text-ink">{label}</span>
         <span className="block text-sm text-ink-soft">{desc}</span>
       </span>
-      <span className="relative inline-flex" onClick={(e) => { e.preventDefault(); onChange(!on); }}>
-        <input type="checkbox" checked={on} readOnly className="peer sr-only" />
-        <span className="h-6 w-11 rounded-full transition-colors peer-checked:bg-primary" style={{ backgroundColor: on ? "var(--color-primary, #6366f1)" : "#e5e7eb" }} />
+      <button
+        type="button"
+        role="switch"
+        aria-checked={on}
+        aria-label={label}
+        onClick={() => onChange(!on)}
+        className="relative inline-flex"
+      >
+        <span className="h-6 w-11 rounded-full transition-colors" style={{ backgroundColor: on ? "var(--color-primary, #6366f1)" : "#e5e7eb" }} />
         <span className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform" style={{ transform: on ? "translateX(1.25rem)" : "none" }} />
-      </span>
+      </button>
     </label>
   );
 }
@@ -42,6 +48,7 @@ export default function SettingsClient() {
   const { user, updateProfile } = useAuth();
   const role = useRole();
   const isAdmin = hasMinRole(role, "admin");
+  const base = useDashboardBase();
 
   const [fullName, setFullName] = useState("");
   const [department, setDepartment] = useState("");
@@ -195,13 +202,13 @@ export default function SettingsClient() {
           {isAdmin && (
             <Panel title="Administration" bodyClassName="space-y-2">
               <a
-                href="/dashboard/users"
+                href={`${base}/users`}
                 className="flex items-center gap-3 rounded-xl border border-border p-3 text-sm font-medium text-ink hover:bg-bg-soft"
               >
                 Manage users
               </a>
               <a
-                href="/dashboard/permissions"
+                href={`${base}/permissions`}
                 className="flex items-center gap-3 rounded-xl border border-border p-3 text-sm font-medium text-ink hover:bg-bg-soft"
               >
                 View permissions

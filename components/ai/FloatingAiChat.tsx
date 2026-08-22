@@ -4,30 +4,46 @@
 // the full AI workspace). State is shared with /dashboard/ai through the
 // zustand store — same conversation, messages and stream.
 
+import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useAiStore, useAiWidget } from "@/lib/ai-store";
+import { useDashboardBase } from "@/lib/use-role";
 import MessageList from "@/components/ai/MessageList";
 import Composer from "@/components/ai/Composer";
 import Icon from "@/components/ui/Icon";
 import { clsx } from "@/lib/cx";
 
-const FULL_PAGE = "/dashboard/ai";
-
 export default function FloatingAiChat() {
   const pathname = usePathname();
+  const base = useDashboardBase();
+  const fullPage = `${base}/ai`;
   const { widgetOpen, setWidgetOpen } = useAiWidget();
   const { streaming } = useAiStore();
+  const closeRef = useRef<HTMLButtonElement>(null);
 
-  if (pathname === FULL_PAGE) return null;
+  useEffect(() => {
+    if (!widgetOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setWidgetOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [widgetOpen]);
+
+  if (pathname === fullPage) return null;
 
   return (
     <>
       {/* FAB */}
       <button
         type="button"
-        onClick={() => setWidgetOpen(!widgetOpen)}
+        onClick={() => {
+          setWidgetOpen(!widgetOpen);
+          requestAnimationFrame(() => closeRef.current?.focus());
+        }}
         aria-label={widgetOpen ? "Close AI assistant" : "Open AI assistant"}
+        aria-expanded={widgetOpen}
         className={clsx(
           "fixed bottom-5 right-5 z-[80] grid h-14 w-14 place-items-center rounded-full bg-gradient-to-br from-primary to-primary-600 text-white shadow-lift transition-transform hover:scale-105 active:scale-95 sm:bottom-6 sm:right-6",
           widgetOpen ? "pointer-events-none scale-0" : "",
@@ -47,7 +63,9 @@ export default function FloatingAiChat() {
           widgetOpen ? "scale-100 opacity-100" : "pointer-events-none scale-95 opacity-0",
         )}
         role="dialog"
+        aria-modal="true"
         aria-label="AI assistant chat"
+        inert={!widgetOpen}
       >
         {/* Header */}
         <header className="flex items-center gap-3 border-b border-border bg-white px-4 py-3">
@@ -62,15 +80,16 @@ export default function FloatingAiChat() {
             </p>
           </div>
           <button
+            ref={closeRef}
             type="button"
-            onClick={() => useAiStore.getState().newChat()}
-            aria-label="New conversation"
+            onClick={() => setWidgetOpen(false)}
+            aria-label="Close"
             className="grid h-8 w-8 place-items-center rounded-lg text-ink-soft transition-colors hover:bg-bg-soft hover:text-ink"
           >
-            <Icon name="plus" className="h-4 w-4" />
+            <Icon name="close" className="h-4 w-4" />
           </button>
           <Link
-            href={FULL_PAGE}
+            href={fullPage}
             aria-label="Open full AI workspace"
             className="grid h-8 w-8 place-items-center rounded-lg text-ink-soft transition-colors hover:bg-bg-soft hover:text-ink"
           >

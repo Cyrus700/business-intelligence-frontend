@@ -125,13 +125,15 @@ export default function EtlJobsPanel({ canManage }: { canManage: boolean }) {
       ) : (
         <div className="-mx-5 -mb-5 overflow-x-auto">
           <table className="w-full text-left text-sm">
+<caption className="sr-only">ETL jobs</caption>
+<caption className="sr-only">ETL jobs</caption>
             <thead>
               <tr className="border-b border-border text-xs font-semibold uppercase text-ink-muted">
-                <th className="py-3 pl-5 pr-3">Trigger</th>
-                <th className="py-3 pr-3">Status</th>
-                <th className="py-3 pr-3">Rows</th>
-                <th className="py-3 pr-3">Duration</th>
-                <th className="py-3 pr-5 text-right">Started</th>
+                <th className="py-3 pl-5 pr-3" scope="col">Trigger</th>
+                <th className="py-3 pr-3" scope="col">Status</th>
+                <th className="py-3 pr-3" scope="col">Rows</th>
+                <th className="py-3 pr-3" scope="col">Duration</th>
+                <th className="py-3 pr-5 text-right" scope="col">Started</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/70">
@@ -203,6 +205,7 @@ function JobRow({
                 type="button"
                 onClick={onToggle}
                 aria-label="Toggle job details"
+                aria-expanded={open}
                 className="rounded-lg p-1 text-ink-muted hover:bg-border/50 hover:text-ink"
               >
                 <Icon name="arrow" className={clsx("h-3.5 w-3.5 transition-transform", open && "rotate-90")} />
