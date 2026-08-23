@@ -8,6 +8,7 @@ import Panel from "@/components/dashboard/Panel";
 import Badge from "@/components/ui/Badge";
 import Icon from "@/components/ui/Icon";
 import { RangePicker, apiParams, useFilters } from "@/lib/filters";
+import AnalyticsLab from "@/components/dashboard/advanced/AnalyticsLab";
 
 type Transaction = {
   id: number;
@@ -276,6 +277,8 @@ export default function ExploreClient() {
           />
         </div>
       </Panel>
+
+      <AnalyticsLab />
     </>
   );
 }

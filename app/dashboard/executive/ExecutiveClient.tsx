@@ -8,6 +8,7 @@ import Badge from "@/components/ui/Badge";
 import Icon from "@/components/ui/Icon";
 import { clsx } from "@/lib/cx";
 import { useFilters, RangePicker, apiParams } from "@/lib/filters";
+import AnalyticsLab from "@/components/dashboard/advanced/AnalyticsLab";
 
 function HealthGauge({ score, label }: { score: number; label: "Healthy" | "Attention" | "Critical" }) {
   const color = label === "Healthy" ? "#22c55e" : label === "Attention" ? "#f59e0b" : "#ef4444";
@@ -176,6 +177,8 @@ export default function ExecutiveClient() {
           </Panel>
         )}
       </div>
+
+      <AnalyticsLab />
     </>
   );
 }

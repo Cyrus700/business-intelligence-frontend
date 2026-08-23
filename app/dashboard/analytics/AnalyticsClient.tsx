@@ -16,6 +16,7 @@ import { RangePicker, apiParams, useFilters, MultiSelectFilter, FilterChipsBar, 
 import { useApi, npr, type KpiSummaryExtended, type KpiCardExtended, type DimensionRow } from "@/lib/api";
 import type { PnlRow } from "@/lib/api";
 import { LoadingState, ErrorState, EmptyState } from "@/components/ui";
+import AnalyticsLab from "@/components/dashboard/advanced/AnalyticsLab";
 import Badge from "@/components/ui/Badge";
 
 function PnLSummary() {
@@ -196,7 +197,7 @@ export default function AnalyticsClient() {
             {(role === "manager" || role === "admin") && (
               <Panel
                 title="Forecast"
-                subtitle="30-day projection with confidence band, and model accuracy vs baseline"
+                subtitle="30-day projection with confidence band, model accuracy, and advanced stochastic (Monte-Carlo) forecast"
                 className="md:col-span-2 xl:col-span-3"
               >
                 <ForecastSection />
@@ -213,6 +214,8 @@ export default function AnalyticsClient() {
           </div>
         )}
       </RoleAnalytics>
+
+      <AnalyticsLab />
     </>
   );
 }

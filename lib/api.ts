@@ -243,6 +243,10 @@ export type TransactionRow = {
   unit_price: number;
   discount: number;
   total_amount: number;
+  ingested_at?: string | null;
+  etl_job_id?: string | null;
+  source_id?: string | null;
+  redacted?: boolean;
 };
 export type Paginated<T> = { items: T[]; total: number; page: number; page_size: number };
 export type InventoryRow = {
@@ -617,14 +621,40 @@ export type ReportRequest = {
   period_start: string;
   period_end: string;
   format: "pdf" | "xlsx";
+  email_me?: boolean;
 };
 
 export async function getReports(): Promise<ReportOut[]> {
   return apiGet<ReportOut[]>("/reports");
 }
 
-export async function generateReport(body: ReportRequest): Promise<ReportOut> {
-  return apiPost<ReportOut>("/reports/generate", body);
+export type ReportJobOut = {
+  id: string;
+  status: "pending" | "claimed" | "succeeded" | "failed" | string;
+  report_type?: string | null;
+  period_start?: string | null;
+  period_end?: string | null;
+  format?: string | null;
+  created_at?: string | null;
+  started_at?: string | null;
+  finished_at?: string | null;
+  report_id?: string | null;
+  position?: number | null;
+  total_in_queue?: number | null;
+  estimated_wait_seconds?: number | null;
+  error?: string | null;
+};
+
+export async function generateReport(body: ReportRequest): Promise<ReportJobOut> {
+  return apiPost<ReportJobOut>("/reports/generate", body);
+}
+
+export async function getReportJobs(params?: { status?: string; limit?: number }): Promise<ReportJobOut[]> {
+  return apiGet<ReportJobOut[]>("/reports/jobs", params as Record<string, string | number | boolean | undefined>);
+}
+
+export async function getReportJob(id: string): Promise<ReportJobOut> {
+  return apiGet<ReportJobOut>(`/reports/jobs/${id}`);
 }
 
 // Reports require an Authorized bearer token, so a plain `<a href>` to the

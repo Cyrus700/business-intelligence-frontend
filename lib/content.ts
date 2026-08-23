@@ -2,7 +2,7 @@
 
 export const BRAND = {
   name: "Insightful",
-  tagline: "AI-Driven Cloud Business Intelligence",
+  tagline: "AI-Driven Analytics Platform",
 };
 
 export const NAV_LINKS = [
@@ -14,7 +14,7 @@ export const NAV_LINKS = [
 ];
 
 export const HERO = {
-  eyebrow: "AI-driven cloud business intelligence",
+  eyebrow: "AI-driven analytics platform",
   title: ["One dashboard for", "every business decision."],
   subtitle:
     "Insightful brings your spreadsheets, databases and APIs into a single cloud dashboard, then uses AI to forecast trends, flag anomalies and explain what to do next.",

@@ -4,6 +4,7 @@ import "./globals.css";
 import GsapProvider from "@/components/providers/GsapProvider";
 import QueryProvider from "@/components/providers/QueryProvider";
 import { AuthProvider } from "@/lib/auth-context";
+import { ToastProvider } from "@/components/ui/Toast";
 import { BRAND } from "@/lib/content";
 
 const geistSans = Geist({
@@ -53,7 +54,7 @@ export default function RootLayout({
         </noscript>
       </head>
       <body className="min-h-full flex flex-col bg-bg text-ink">
-        <QueryProvider><GsapProvider><AuthProvider>{children}</AuthProvider></GsapProvider></QueryProvider>
+        <QueryProvider><GsapProvider><AuthProvider><ToastProvider>{children}</ToastProvider></AuthProvider></GsapProvider></QueryProvider>
       </body>
     </html>
   );

@@ -13,6 +13,7 @@ import { retrainForecasts } from "@/lib/api";
 import { useRole } from "@/lib/use-role";
 import LiveForecast from "./LiveForecast";
 import ForecastAccuracy from "./ForecastAccuracy";
+import AdvancedForecast from "../advanced/AdvancedForecast";
 
 export default function ForecastSection() {
   const role = useRole();
@@ -80,6 +81,8 @@ export default function ForecastSection() {
         <p className="mb-3 text-sm font-medium text-ink">Model accuracy by target</p>
         <ForecastAccuracy />
       </div>
+
+      <AdvancedForecast />
     </div>
   );
 }

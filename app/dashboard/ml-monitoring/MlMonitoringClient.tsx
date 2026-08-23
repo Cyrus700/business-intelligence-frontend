@@ -13,6 +13,7 @@ import { nprCompact } from "@/lib/api";
 import Panel from "@/components/dashboard/Panel";
 import PageHeader from "@/components/dashboard/PageHeader";
 import Badge from "@/components/ui/Badge";
+import PredictiveLab from "@/components/dashboard/advanced/PredictiveLab";
 
 export default function MlMonitoringClient() {
   const [models, setModels] = useState<MlModelOut[]>([]);
@@ -226,6 +227,7 @@ export default function MlMonitoringClient() {
           </button>
         )}
       </Panel>
+      <PredictiveLab />
     </div>
   );
 
