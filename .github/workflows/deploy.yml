@@ -3,14 +3,6 @@ name: Deploy Frontend to EC2
 on:
   push:
     branches: [main]
-    paths:
-      - "app/**"
-      - "components/**"
-      - "lib/**"
-      - "public/**"
-      - "Dockerfile"
-      - "package.json"
-      - "next.config.ts"
   workflow_dispatch:
 
 jobs:
