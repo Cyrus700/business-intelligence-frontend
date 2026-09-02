@@ -160,15 +160,23 @@
 
   /* Brand-tinted text for one emphasised phrase per heading — no more. */
   .text-gradient {
-    background: linear-gradient(
-      100deg,
-      var(--color-primary) 0%,
-      var(--color-violet) 45%,
-      var(--color-sky) 100%
-    );
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    /* Fallback solid colour if background-clip:text is unsupported */
+    color: var(--color-primary);
+  }
+  @supports (-webkit-background-clip: text) or (background-clip: text) {
+    .text-gradient {
+      background: linear-gradient(
+        100deg,
+        var(--color-primary) 0%,
+        var(--color-violet) 45%,
+        var(--color-sky) 100%
+      );
+      -webkit-background-clip: text;
+      background-clip: text;
+      /* must be transparent *and* webkit fill for Safari */
+      color: transparent;
+      -webkit-text-fill-color: transparent;
+    }
   }
 
   /* Fine engineering grid, faded at the edges. Signals "instrument", not "poster". */

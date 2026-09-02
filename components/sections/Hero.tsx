@@ -68,21 +68,40 @@ export default function Hero() {
 
       // Headline — masked line rise, then a per-character shimmer on the
       // emphasised line so the type feels typeset rather than pasted in.
-      tl.from(
-        q("[data-line]"),
-        { yPercent: 112, duration: DUR.slow, ease: EASE.expo, stagger: 0.1 },
+      // Use fromTo so the end state (yPercent:0) is explicit — if the
+      // timeline is interrupted the text still ends visible.
+      const lines = q("[data-line]") as HTMLElement[];
+      // Ensure lines start hidden for the animation, but also schedule a
+      // safety fallback that forces them visible if GSAP is interrupted
+      // (e.g. reduced-motion toggle, StrictMode double-mount, or a
+      // ScrollTrigger error). The fallback is cheap and idempotent.
+      tl.fromTo(
+        lines,
+        { yPercent: 112 },
+        { yPercent: 0, duration: DUR.slow, ease: EASE.expo, stagger: 0.1, overwrite: "auto" },
         "-=0.15",
       );
 
       const accentLine = q("[data-line-accent]")[0] as HTMLElement | undefined;
       if (accentLine) {
         const chars = splitChars(accentLine);
-        tl.from(
+        tl.fromTo(
           chars,
-          { opacity: 0.25, duration: 0.5, stagger: 0.018, ease: "none" },
+          { opacity: 0.25 },
+          { opacity: 1, duration: 0.5, stagger: 0.018, ease: "none" },
           "-=0.7",
         );
       }
+
+      // Safety net: if headline is still translated after 1.6s (timeline
+      // killed, e.g. by a fast navigation), force it visible. Keeps the
+      // landing page readable even when motion fails.
+      const headlineFallback = window.setTimeout(() => {
+        gsap.set(lines, { yPercent: 0, opacity: 1, clearProps: "transform" });
+        const ac = q("[data-line-accent]")[0] as HTMLElement | undefined;
+        if (ac) gsap.set(ac.querySelectorAll<HTMLElement>("[data-char]"), { opacity: 1 });
+      }, 1650);
+      cleanups.push(() => window.clearTimeout(headlineFallback));
 
       tl.from(q("[data-hero-sub]"), { y: 22, opacity: 0, duration: DUR.base }, "-=0.5");
       tl.from(q("[data-hero-ctas]"), { y: 18, opacity: 0, duration: DUR.base }, "-=0.45");
@@ -231,11 +250,12 @@ export default function Hero() {
             {hero.title.map((line, i) => {
               const isLast = i === hero.title.length - 1;
               return (
-                <span key={i} className="block overflow-hidden pb-[0.1em] -mb-[0.1em]">
+                <span key={i} className="block overflow-hidden pb-[0.14em] -mb-[0.14em]">
                   <span
                     data-line
                     {...(isLast ? { "data-line-accent": "" } : {})}
                     className={`block will-change-transform ${isLast ? "text-gradient" : ""}`}
+                    style={isLast ? undefined : undefined}
                   >
                     {line}
                   </span>
