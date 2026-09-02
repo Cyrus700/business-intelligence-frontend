@@ -115,13 +115,22 @@ export default function MessageList({
   const { messages, streaming, error } = useAiStore();
   const listRef = useRef<HTMLDivElement>(null);
   const [atBottom, setAtBottom] = useState(true);
+  // Capped history: show last N to keep UI fast and avoid giant threads
+  const CAP = 40;
+  const [showAll, setShowAll] = useState(false);
 
   const compact = size === "sm";
+  const visibleMessages = showAll || messages.length <= CAP ? messages : messages.slice(-CAP);
+  const isCapped = !showAll && messages.length > CAP;
+
+  useEffect(() => {
+    setShowAll(false);
+  }, [messages.length]);
 
   useEffect(() => {
     const el = listRef.current;
     if (el && atBottom) el.scrollTop = el.scrollHeight;
-  }, [messages, streaming, atBottom]);
+  }, [messages, streaming, atBottom, visibleMessages.length]);
 
   const handleScroll = () => {
     const el = listRef.current;
@@ -139,7 +148,34 @@ export default function MessageList({
         <EmptyState compact={compact} onSuggest={onSuggest ?? (() => {})} />
       )}
 
-      {messages.map((m, i) => (
+      {isCapped && (
+        <div className="mx-auto flex items-center gap-2 rounded-full bg-bg-soft px-3 py-1.5 text-xs text-ink-soft">
+          <span>
+            Showing last {CAP} of {messages.length} messages — history is capped for performance
+          </span>
+          <button
+            type="button"
+            onClick={() => setShowAll(true)}
+            className="font-medium text-primary hover:underline"
+          >
+            Show all
+          </button>
+          <span>·</span>
+          <button
+            type="button"
+            onClick={async () => {
+              if (confirm("Flush this conversation's history?")) await useAiStore.getState().deleteConversation(useAiStore.getState().activeId ?? "");
+            }}
+            className="font-medium text-warn hover:underline"
+          >
+            Flush
+          </button>
+        </div>
+      )}
+
+      {visibleMessages.map((m, i) => {
+        const globalIndex = (showAll ? 0 : messages.length - visibleMessages.length) + i;
+        return (
         <div
           key={m.id}
           className={clsx("group flex items-end gap-2", m.role === "user" ? "justify-end" : "justify-start")}
@@ -169,11 +205,15 @@ export default function MessageList({
             ) : m.content ? (
               <>
                 <Markdown text={m.content} />
-                {streaming && i === messages.length - 1 && <TypingDots className="mt-1" />}
+                {streaming && globalIndex === messages.length - 1 && <TypingDots className="mt-1" />}
               </>
-            ) : streaming && i === messages.length - 1 ? (
+            ) : streaming && globalIndex === messages.length - 1 ? (
               <TypingDots />
-            ) : null}
+            ) : (
+              // History fix: previously empty assistant bubbles were hidden, making history look like only user messages.
+              // Show a placeholder so the thread stays coherent and flushing is obvious.
+              <span className="text-ink-muted">— no response recorded —</span>
+            )}
 
             <div
               className={clsx(
@@ -192,7 +232,8 @@ export default function MessageList({
             </span>
           )}
         </div>
-      ))}
+        );
+      })}
 
       {streaming && messages.length > 0 && !atBottom && (
         <button

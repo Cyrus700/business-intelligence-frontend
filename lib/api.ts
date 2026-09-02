@@ -477,8 +477,27 @@ export async function getConversations(): Promise<AIConversation[]> {
   return apiGet<AIConversation[]>("/ai/conversations");
 }
 
-export async function getConversationMessages(convId: string): Promise<AIMessage[]> {
-  return apiGet<AIMessage[]>(`/ai/conversations/${convId}/messages`);
+export async function getConversationMessages(convId: string, params?: { limit?: number; offset?: number }): Promise<AIMessage[]> {
+  return apiGet<AIMessage[]>(`/ai/conversations/${convId}/messages`, params as QueryParams);
+}
+
+export async function deleteConversation(convId: string): Promise<void> {
+  return apiDelete(`/ai/conversations/${convId}`);
+}
+
+export async function flushConversations(): Promise<{ deleted: number }> {
+  return apiDelete(`/ai/conversations`) as unknown as Promise<{ deleted: number }>;
+}
+
+export type RetentionOut = { retention_days: number; updated_at: string | null; updated_by: string | null; choices: number[]; is_disabled: boolean };
+export async function getRetention(): Promise<RetentionOut> {
+  return apiGet<RetentionOut>("/ai/retention");
+}
+export async function setRetention(days: number): Promise<RetentionOut> {
+  return apiPost<RetentionOut>("/ai/retention", { retention_days: days });
+}
+export async function triggerRetentionFlush(): Promise<{ deleted: number; retention_days: number }> {
+  return apiPost<{ deleted: number; retention_days: number }>("/ai/retention/flush", {});
 }
 
 export async function getAIInsights(scope?: string): Promise<AIInsight[]> {

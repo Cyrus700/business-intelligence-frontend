@@ -33,7 +33,10 @@ export type IconName =
   | "calendar"
   | "bookmark"
   | "building"
-  | "clock";
+  | "clock"
+  | "trash"
+  | "message"
+  | "chevron-down";
 
 const paths: Record<IconName, React.ReactNode> = {
   chart: (
@@ -233,6 +236,22 @@ const paths: Record<IconName, React.ReactNode> = {
       <path d="M12 7v5l4 2" />
     </>
   ),
+  trash: (
+    <>
+      <path d="M3 6h18" />
+      <path d="M8 6V4h8v2" />
+      <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+    </>
+  ),
+  message: (
+    <>
+      <path d="M21 11.5a8.5 8.5 0 01-12.5 7.5L3 21l1.5-5.5A8.5 8.5 0 0121 11.5z" />
+      <path d="M8 11h8M8 15h5" />
+    </>
+  ),
+  "chevron-down": <path d="M6 9l6 6 6-6" />,
 };
 
 export default function Icon({

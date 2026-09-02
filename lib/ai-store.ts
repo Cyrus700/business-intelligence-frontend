@@ -9,6 +9,8 @@ import {
   ApiError,
   aiChat,
   aiChatStream,
+  deleteConversation as apiDeleteConversation,
+  flushConversations as apiFlushConversations,
   getConversationMessages,
   getConversations,
   type AIConversation,
@@ -49,6 +51,8 @@ type AiActions = {
   setDraft: (value: string) => void;
   sendMessage: (text: string) => Promise<void>;
   stopStreaming: () => void;
+  deleteConversation: (id: string) => Promise<void>;
+  flushHistory: () => Promise<number>;
 };
 
 // Widget open state also lives here so any component can open/close it.
@@ -81,7 +85,8 @@ export const useAiStore = create<AiStore & AiActions>()((set, get) => ({
     controller = null;
     set({ activeId: id, messages: [], error: null });
     try {
-      set({ messages: await getConversationMessages(id) });
+      // Capped history: fetch last 200 (backend limit), UI will cap display to last 50 with load-more
+      set({ messages: await getConversationMessages(id, { limit: 200 }) });
     } catch (e) {
       set({ error: e instanceof Error ? e.message : "Failed to load messages." });
     }
@@ -186,6 +191,24 @@ export const useAiStore = create<AiStore & AiActions>()((set, get) => ({
 
   stopStreaming: () => {
     controller?.abort();
+  },
+
+  deleteConversation: async (id) => {
+    try {
+      await apiDeleteConversation(id);
+      set({ conversations: get().conversations.filter((c) => c.id !== id) });
+      if (get().activeId === id) set({ activeId: null, messages: [] });
+      await get().fetchConversations();
+    } catch (e) {
+      set({ error: e instanceof Error ? e.message : "Failed to delete conversation." });
+    }
+  },
+
+  flushHistory: async () => {
+    const res = await apiFlushConversations();
+    set({ conversations: [], activeId: null, messages: [] });
+    await get().fetchConversations();
+    return res.deleted;
   },
 }));
 
