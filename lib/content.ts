@@ -1,7 +1,7 @@
 // Single source of truth for all landing-page copy and data.
 
 export const BRAND = {
-  name: "Insightful",
+  name: "InsightFlow",
   tagline: "AI-Driven Analytics Platform",
 };
 
@@ -66,7 +66,7 @@ export const STEPS = [
   {
     no: "01",
     title: "Connect your data",
-    body: "Point Insightful at your spreadsheets, databases and APIs. Our ETL pipelines clean, standardise and centralise everything automatically.",
+    body: "Point InsightFlow at your spreadsheets, databases and APIs. Our ETL pipelines clean, standardise and centralise everything automatically.",
   },
   {
     no: "02",
@@ -81,7 +81,7 @@ export const STEPS = [
 ];
 
 export const COMPARISON = {
-  columns: ["Power BI", "Tableau", "Looker Studio", "Insightful"],
+  columns: ["Power BI", "Tableau", "Looker Studio", "InsightFlow"],
   rows: [
     { feature: "AI / ML integration", cells: ["Limited", "Limited", "None", "Core feature"] },
     { feature: "Predictive analytics", cells: ["Basic", "Basic", "None", "Advanced"] },
@@ -139,7 +139,7 @@ export const PRICING = [
 export const FAQS = [
   {
     q: "How is this affordable for a small business?",
-    a: "Insightful is cloud-native and pay-as-you-go — there's no upfront hardware or licensing. You only pay for what you use, and there's a free tier to start.",
+    a: "InsightFlow is cloud-native and pay-as-you-go — there's no upfront hardware or licensing. You only pay for what you use, and there's a free tier to start.",
   },
   {
     q: "Is my data secure?",
