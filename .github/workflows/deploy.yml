@@ -5,26 +5,84 @@ on:
     branches: [main]
   workflow_dispatch:
 
+concurrency:
+  group: deploy-frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  FRONTEND_IMAGE: ghcr.io/${{ github.repository_owner }}/bi-frontend
+
 jobs:
-  deploy-frontend:
+  frontend-ci:
     runs-on: ubuntu-latest
-    environment: production
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - uses: pnpm/action-setup@v4
         with:
           version: 9
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
+
+      - name: Cache Next.js
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: next-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('**/*.ts', '**/*.tsx') }}
+
       - run: pnpm install --frozen-lockfile --prefer-offline --ignore-scripts
-      - run: rm -f pnpm-workspace.yaml && npm run build
+
+      - name: Build
         env:
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+        run: rm -f pnpm-workspace.yaml && npm run build
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push frontend (GHCR + gha cache)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ env.FRONTEND_IMAGE }}:${{ github.sha }},${{ env.FRONTEND_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+
+  deploy-frontend:
+    needs: frontend-ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Validate secrets
+        run: |
+          test -n "${{ secrets.EC2_HOST }}" || (echo "::error::EC2_HOST missing" && exit 1)
+          test -n "${{ secrets.EC2_USER }}" || (echo "::error::EC2_USER missing" && exit 1)
+          test -n "${{ secrets.EC2_SSH_KEY }}" || (echo "::error::EC2_SSH_KEY missing" && exit 1)
 
       - name: Setup SSH
         run: |
@@ -32,30 +90,34 @@ jobs:
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/ec2.pem
           chmod 600 ~/.ssh/ec2.pem
           ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null || true
+          ssh -i ~/.ssh/ec2.pem -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10 "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" "echo ok"
 
-      - name: Rsync frontend to EC2
+      - name: Rsync frontend to EC2 (no node_modules/.next)
         run: |
           rsync -az --delete \
             --exclude '.git' --exclude 'node_modules' --exclude '.next' --exclude '.env*' \
             -e "ssh -i ~/.ssh/ec2.pem -o StrictHostKeyChecking=accept-new" \
             ./ "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/app/business-intelligence-frontend/"
 
-      - name: Deploy frontend on EC2
+      - name: Deploy frontend on EC2 (pull GHCR, not build on 1GB)
+        env:
+          TAG: ${{ github.sha }}
         run: |
-          ssh -i ~/.ssh/ec2.pem -o StrictHostKeyChecking=accept-new "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" bash -s <<'EOSSH'
+          ssh -i ~/.ssh/ec2.pem -o StrictHostKeyChecking=accept-new "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" bash -s <<EOSSH
           set -euo pipefail
           cd ~/app
           if [ -f deploy/docker-compose.prod.yml ]; then COMPOSE="deploy/docker-compose.prod.yml"; else COMPOSE="business-intelligence-frontend/../deploy/docker-compose.prod.yml"; fi
-          # Fallback to standalone if no monorepo compose
-          if [ ! -f "$COMPOSE" ]; then
-            cd ~/app/business-intelligence-frontend
-            docker build -t bi-frontend:latest .
-            docker rm -f bi-frontend 2>/dev/null || true
-            docker run -d --name bi-frontend --restart unless-stopped -p 127.0.0.1:3000:3000 -e NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL }}" bi-frontend:latest
+          echo "Using \$COMPOSE"
+          export TAG=$TAG
+          sed -i "s|image: .*bi-frontend:.*|image: ghcr.io/${{ github.repository_owner }}/bi-frontend:$TAG|" \$COMPOSE || true
+          if grep -q "ghcr.io" \$COMPOSE; then
+            if [ -f ~/ghcr.token ]; then cat ~/ghcr.token | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin || true; fi
+            docker compose -f \$COMPOSE pull frontend || docker pull ghcr.io/${{ github.repository_owner }}/bi-frontend:$TAG
           else
-            docker compose -f "$COMPOSE" build frontend
-            docker compose -f "$COMPOSE" up -d frontend
+            docker compose -f \$COMPOSE build frontend
           fi
+          docker compose -f \$COMPOSE up -d frontend
           sleep 5
-          curl -fsS http://127.0.0.1:3000/ | head -n 20 | grep -qi "html" && echo "frontend ok"
+          curl -fsS http://127.0.0.1:3000/ | head -n 1 | grep -qi html && echo "frontend ok"
+          docker image prune -f --filter "until=24h" || true
           EOSSH
