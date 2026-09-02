@@ -71,14 +71,14 @@ export default function Faq() {
           subtitle="The things teams ask us most before getting started."
         />
 
-        <div ref={root} className="mt-12 flex flex-col gap-3">
+        <div ref={root} className="mt-8 sm:mt-12 flex flex-col gap-3">
           {items.map((item, i) => {
             const isOpen = open === i;
             return (
               <div
                 key={item.q}
                 className={clsx(
-                  "overflow-hidden rounded-2xl border bg-white transition-colors duration-300",
+                  "overflow-hidden rounded-xl sm:rounded-2xl border bg-white transition-colors duration-300",
                   isOpen ? "border-primary/30 shadow-card" : "border-border",
                 )}
               >
@@ -86,21 +86,21 @@ export default function Faq() {
                   type="button"
                   onClick={() => setOpen(isOpen ? null : i)}
                   aria-expanded={isOpen}
-                  className="flex w-full items-center justify-between gap-4 p-5 text-left"
+                  className="flex w-full items-center justify-between gap-3 sm:gap-4 p-4 sm:p-5 text-left"
                 >
-                  <span className="font-medium text-ink">{item.q}</span>
+                  <span className="text-[15px] sm:text-base font-medium text-ink leading-snug pr-2">{item.q}</span>
                   <span
                     data-faq-icon
                     className={clsx(
-                      "grid h-7 w-7 shrink-0 place-items-center rounded-full border text-ink-soft",
-                      isOpen ? "border-primary text-primary" : "border-border",
+                      "grid h-7 w-7 sm:h-7 sm:w-7 shrink-0 place-items-center rounded-full border text-ink-soft text-sm leading-none",
+                      isOpen ? "border-primary text-primary bg-primary-50" : "border-border bg-white",
                     )}
                   >
                     +
                   </span>
                 </button>
                 <div data-panel className="h-0 opacity-0 overflow-hidden">
-                  <div data-panel-body className="px-5 pb-5">
+                  <div data-panel-body className="px-4 sm:px-5 pb-4 sm:pb-5">
                     <p className="text-sm leading-relaxed text-ink-soft">
                       {item.a}
                     </p>

@@ -25,6 +25,15 @@ type AdminSection = {
 
 const ADMIN_SECTIONS: AdminSection[] = [
   {
+    id: "businesses",
+    label: "Businesses",
+    icon: "building",
+    description: "Approve & manage registered businesses",
+    href: "/dashboard/businesses",
+    badge: "System Admin",
+    status: "ok",
+  },
+  {
     id: "users",
     label: "Users & Roles",
     icon: "users",

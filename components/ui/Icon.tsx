@@ -31,7 +31,9 @@ export type IconName =
   | "inbox"
   | "document"
   | "calendar"
-  | "bookmark";
+  | "bookmark"
+  | "building"
+  | "clock";
 
 const paths: Record<IconName, React.ReactNode> = {
   chart: (
@@ -216,6 +218,19 @@ const paths: Record<IconName, React.ReactNode> = {
   bookmark: (
     <>
       <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
+    </>
+  ),
+  building: (
+    <>
+      <rect x="4" y="2" width="16" height="20" rx="2" />
+      <path d="M9 22V12h6v10" />
+      <path d="M8 6h1M12 6h1M16 6h1M8 10h1M12 10h1M16 10h1M8 14h1M12 14h1M16 14h1" />
+    </>
+  ),
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l4 2" />
     </>
   ),
 };

@@ -121,12 +121,12 @@ export default function Navbar() {
         data-progress
       />
 
-      <nav className="container-page flex h-16 items-center justify-between">
-        <Link href="/" aria-label={`${BRAND.name} home`} className="group flex items-center">
+      <nav className="container-page flex h-14 sm:h-16 items-center justify-between gap-3">
+        <Link href="/" aria-label={`${BRAND.name} home`} className="group flex items-center shrink-0">
           <BrandLogo
-            height={40}
+            height={34}
             priority
-            imgClassName="transition-transform duration-300 group-hover:scale-105"
+            imgClassName="transition-transform duration-300 group-hover:scale-105 sm:h-10"
           />
         </Link>
 
@@ -167,7 +167,7 @@ export default function Navbar() {
           aria-label="Toggle menu"
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
-          className="grid h-10 w-10 place-items-center rounded-lg border border-border bg-white md:hidden"
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border bg-white shadow-sm md:hidden active:scale-95 transition-transform"
         >
           <span className="relative block h-3.5 w-5">
             <span
@@ -197,7 +197,7 @@ export default function Navbar() {
         ref={menu}
         aria-hidden={!open}
         style={{ height: 0, opacity: 0 }}
-        className="overflow-hidden border-border bg-white/95 backdrop-blur-xl md:hidden"
+        className="overflow-hidden border-t border-border bg-white/95 backdrop-blur-xl shadow-lg md:hidden"
       >
         <ul className="container-page flex flex-col gap-1 py-4">
           {NAV_LINKS.map((link) => (
@@ -206,23 +206,23 @@ export default function Navbar() {
                 href={link.href}
                 onClick={() => setOpen(false)}
                 data-menu-link
-                className="block rounded-lg px-3 py-2.5 text-sm font-medium text-ink-soft transition-colors hover:bg-bg-soft hover:text-ink"
+                className="block rounded-xl px-3.5 py-3 text-[15px] font-medium text-ink-soft transition-colors hover:bg-bg-soft hover:text-ink active:bg-bg-soft"
               >
                 {link.label}
               </a>
             </li>
           ))}
-          <li className="mt-2 flex gap-3 px-3">
+          <li className="mt-3 flex gap-3 px-0 sm:px-0 pt-3 border-t border-border/60">
             {user ? (
-              <Button href={dashHref} variant="primary" size="md" className="flex-1">
+              <Button href={dashHref} variant="primary" size="md" className="flex-1 justify-center">
                 Dashboard
               </Button>
             ) : (
               <>
-                <Button href="/login" variant="secondary" size="md" className="flex-1">
+                <Button href="/login" variant="secondary" size="md" className="flex-1 justify-center">
                   Log in
                 </Button>
-                <Button href="/register" variant="primary" size="md" className="flex-1">
+                <Button href="/register" variant="primary" size="md" className="flex-1 justify-center">
                   Register
                 </Button>
               </>

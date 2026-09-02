@@ -18,7 +18,7 @@ export default function Section({
     <section
       id={id}
       className={clsx(
-        "scroll-mt-24 py-24 md:py-32",
+        "scroll-mt-24 py-16 sm:py-20 lg:py-24 xl:py-28",
         soft && "bg-bg-soft",
         className,
       )}

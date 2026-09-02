@@ -64,12 +64,32 @@
   }
 }
 
+@layer base {
+  /* Prevent horizontal scroll from decorative layers */
+  html {
+    overflow-x: clip;
+  }
+  body {
+    overflow-x: clip;
+  }
+}
+
 @layer components {
   .container-page {
     width: 100%;
     max-width: 72rem;
     margin-inline: auto;
-    padding-inline: 1.5rem;
+    padding-inline: 1rem;
+  }
+  @media (min-width: 640px) {
+    .container-page {
+      padding-inline: 1.5rem;
+    }
+  }
+  @media (min-width: 1024px) {
+    .container-page {
+      padding-inline: 2rem;
+    }
   }
 
   /* One restrained wash of brand colour behind the hero — no mesh, no grid. */
@@ -153,22 +173,36 @@
     position: absolute;
     display: block;
     border-radius: 9999px;
-    filter: blur(72px);
-    opacity: 0.5;
+    filter: blur(48px);
+    opacity: 0.38;
     will-change: transform;
   }
+  @media (min-width: 768px) {
+    .aurora span {
+      filter: blur(72px);
+      opacity: 0.5;
+    }
+  }
 
-  /* Brand-tinted text for one emphasised phrase per heading — no more. */
+  /* Brand-tinted text for one emphasised phrase per heading — no more.
+     Solid fallback first so every device sees text even if gradient fails;
+     progressive enhancement overrides when background-clip:text is supported. */
   .text-gradient {
-    background: linear-gradient(
-      100deg,
-      var(--color-primary) 0%,
-      var(--color-violet) 45%,
-      var(--color-sky) 100%
-    );
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    color: var(--color-primary);
+  }
+  @supports ((-webkit-background-clip: text) or (background-clip: text)) {
+    .text-gradient {
+      background: linear-gradient(
+        100deg,
+        var(--color-primary) 0%,
+        var(--color-violet) 45%,
+        var(--color-sky) 100%
+      );
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      -webkit-text-fill-color: transparent;
+    }
   }
 
   /* Fine engineering grid, faded at the edges. Signals "instrument", not "poster". */
@@ -186,17 +220,35 @@
     -webkit-mask-image: linear-gradient(
       to right,
       transparent,
-      #000 6rem,
-      #000 calc(100% - 6rem),
+      #000 1.5rem,
+      #000 calc(100% - 1.5rem),
       transparent
     );
     mask-image: linear-gradient(
       to right,
       transparent,
-      #000 6rem,
-      #000 calc(100% - 6rem),
+      #000 1.5rem,
+      #000 calc(100% - 1.5rem),
       transparent
     );
+  }
+  @media (min-width: 768px) {
+    .edge-fade {
+      -webkit-mask-image: linear-gradient(
+        to right,
+        transparent,
+        #000 4rem,
+        #000 calc(100% - 4rem),
+        transparent
+      );
+      mask-image: linear-gradient(
+        to right,
+        transparent,
+        #000 4rem,
+        #000 calc(100% - 4rem),
+        transparent
+      );
+    }
   }
 
   /* Live-data pulse used on "streaming" badges. */
@@ -276,13 +328,41 @@
   }
 }
 
-/* GSAP reveal: elements start hidden to avoid FOUC, JS animates them in.
-   If JS is disabled or reduced-motion is on, .reveal-ready shows them. */
-[data-reveal] {
+/* GSAP reveal: elements start hidden only when JS is present.
+   If JS is disabled or reduced-motion is on, they stay visible. */
+html.js [data-reveal] {
   opacity: 0;
 }
-.reveal-ready [data-reveal] {
+html.js.reveal-ready [data-reveal],
+html:not(.js) [data-reveal] {
   opacity: 1;
+}
+/* Failsafe: if JS loads but GSAP never fires, reveal after 1.2s */
+html.js [data-reveal] {
+  animation: reveal-fallback 0.01s forwards;
+  animation-delay: 1.5s;
+}
+html.js.reveal-ready [data-reveal] {
+  animation: none;
+}
+@keyframes reveal-fallback {
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* Hero lines — ensure the masked headline never stays hidden if GSAP aborts.
+   GSAP sets an inline yPercent; this overrides it after the global reveal-ready
+   timeout so "every business decision." is always visible, even on low-end
+   devices that kill the timeline. */
+html.js.reveal-ready [data-line],
+html.js.reveal-ready [data-hero-sub],
+html.js.reveal-ready [data-hero-ctas],
+html.js.reveal-ready [data-proof],
+html.js.reveal-ready [data-eyebrow],
+html.js.reveal-ready [data-mock] {
+  transform: none !important;
+  opacity: 1 !important;
 }
 
 /* AI "generating" indicator: three dots with a staggered bounce. */

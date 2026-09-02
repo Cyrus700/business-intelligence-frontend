@@ -6,30 +6,33 @@ import { useGSAP } from "@gsap/react";
 import Section from "@/components/ui/Section";
 import SectionHeading from "@/components/ui/SectionHeading";
 import { DUR, EASE, prefersReducedMotion, revealTrigger } from "@/lib/motion";
-import { useLandingData, useLandingLive } from "@/lib/landing-api";
+import { useLandingData } from "@/lib/landing-api";
+import type { PlatformSnapshot } from "@/lib/landing-live";
 import { STEPS } from "@/lib/content";
 
-export default function HowItWorks() {
+export default function HowItWorks({ live }: { live: PlatformSnapshot | null }) {
   const root = useRef<HTMLDivElement>(null);
   const { data } = useLandingData();
-  const { data: live } = useLandingLive();
   const steps = data?.steps ?? STEPS;
 
-  // What each stage has actually done in this deployment.
-  const metrics = [
-    live && {
-      value: live.totals.records_unified.toLocaleString("en-IN"),
-      label: `rows landed from ${live.totals.data_sources} sources`,
-    },
-    live && {
-      value: live.totals.forecast_points.toLocaleString("en-IN"),
-      label: `forecast points from ${live.totals.models_trained} trained models`,
-    },
-    live && {
-      value: live.totals.insights.toLocaleString("en-IN"),
-      label: `AI insights written for the dashboard`,
-    },
-  ];
+  // One figure per step, and only the ones a visitor can read at face value.
+  // Model versions and forecast-point counts meant nothing here, so they went.
+  const metrics = live
+    ? [
+        {
+          value: live.totals.records_unified.toLocaleString("en-IN"),
+          label: `rows landed from ${live.totals.data_sources} sources`,
+        },
+        {
+          value: `${live.pipeline.success_rate_pct}%`,
+          label: `of ${live.totals.etl_jobs.toLocaleString("en-IN")} pipeline runs succeeded`,
+        },
+        {
+          value: live.totals.insights.toLocaleString("en-IN"),
+          label: "AI insights written for the dashboard",
+        },
+      ]
+    : [null, null, null];
 
   useGSAP(
     () => {
@@ -93,11 +96,11 @@ export default function HowItWorks() {
         subtitle="No data team and no long rollout. Connect your data and let the platform handle the analysis."
       />
 
-      <div ref={root} className="relative mt-16">
+      <div ref={root} className="relative mt-8 sm:mt-12 lg:mt-16">
         {/* Connecting progress line — scrubs with scroll, hidden on stacked mobile. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-[50px] hidden h-0.5 overflow-hidden rounded-full bg-border md:block"
+          className="pointer-events-none absolute inset-x-0 top-[48px] hidden h-0.5 overflow-hidden rounded-full bg-border md:block"
         >
           <div
             data-steps-fill
@@ -107,39 +110,33 @@ export default function HowItWorks() {
           </div>
         </div>
 
-        <ol className="grid gap-6 md:grid-cols-3">
+        <ol className="grid gap-4 sm:gap-5 lg:gap-6 md:grid-cols-3">
           {steps.map((step, i) => {
             const metric = metrics[i];
             return (
-              <li key={step.no} data-step-card className="h-full">
-                <div className="surface-spotlight relative z-10 flex h-full flex-col gap-4 rounded-2xl border border-border bg-white p-7 shadow-card transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-lift">
+              <li key={step.no} data-step-card className="h-full min-w-0">
+                <div className="surface-spotlight relative z-10 flex h-full flex-col gap-3 sm:gap-4 rounded-xl sm:rounded-2xl border border-border bg-white p-5 sm:p-6 lg:p-7 shadow-card transition-all duration-300 lg:hover:-translate-y-1 hover:border-primary/30 lg:hover:shadow-lift">
                   <span
                     data-step-badge
-                    className="relative z-10 grid h-11 w-11 place-items-center rounded-xl bg-primary-50 font-mono text-lg font-semibold text-primary ring-4 ring-white"
+                    className="relative z-10 grid h-10 w-10 sm:h-11 sm:w-11 place-items-center rounded-xl bg-primary-50 font-mono text-base sm:text-lg font-semibold text-primary ring-4 ring-white shrink-0"
                   >
                     {step.no}
                   </span>
-                  <h3 className="text-lg font-semibold text-ink">{step.title}</h3>
+                  <h3 className="text-base sm:text-lg font-semibold text-ink leading-tight">{step.title}</h3>
                   <p className="flex-1 text-sm leading-relaxed text-ink-soft">
                     {step.body}
                   </p>
 
-                  {/* What this stage has produced here, right now. */}
-                  <div className="border-t border-border/70 pt-4">
-                    {metric ? (
-                      <>
-                        <p className="font-mono text-2xl font-semibold tabular-nums text-ink">
-                          {metric.value}
-                        </p>
-                        <p className="mt-0.5 text-xs text-ink-muted">{metric.label}</p>
-                      </>
-                    ) : (
-                      <div className="space-y-2">
-                        <div className="h-6 w-24 animate-pulse rounded bg-bg-soft" />
-                        <div className="h-3 w-36 animate-pulse rounded bg-bg-soft" />
-                      </div>
-                    )}
-                  </div>
+                  {/* Platform figure — omitted when the warehouse is unreachable,
+                      so the card stays timeless rather than showing a stand-in. */}
+                  {metric ? (
+                    <div className="border-t border-border/60 pt-3 sm:pt-4">
+                      <p className="font-mono text-xl sm:text-2xl font-semibold tabular-nums text-ink leading-none">
+                        {metric.value}
+                      </p>
+                      <p className="mt-1 text-xs leading-tight text-ink-muted break-words">{metric.label}</p>
+                    </div>
+                  ) : null}
                 </div>
               </li>
             );

@@ -32,10 +32,12 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     "users:manage": useCan("users:manage"),
   } as const;
 
+  const isSuper = !!user?.is_super_admin;
   const visible = DASH_NAV.filter(
     (item) =>
       (item.permission ? can[item.permission as keyof typeof can] : true) &&
-      (!item.minRole || hasMinRole(user?.role ?? null, item.minRole)),
+      (!item.minRole || hasMinRole(user?.role ?? null, item.minRole)) &&
+      (!(item as any).superAdminOnly || isSuper),
   );
 
   return (

@@ -58,11 +58,23 @@ export default function SignupForm({ next = "", inviteToken = "" }: { next?: str
       )}
 
       <Field label="Full name" name="name" placeholder="Sairash Budhathoki" autoComplete="name" required={false} />
-      <Field label="Work email" type="email" name="email" placeholder="you@company.com" autoComplete="email" />
+      <Field label="Email" type="email" name="email" placeholder="you@example.com" autoComplete="email" />
       <Field label="Password" type="password" name="password" placeholder="At least 8 characters" autoComplete="new-password" />
-      <Field label="Invite token" name="invite_token" placeholder="Paste invite token" defaultValue={inviteFromQuery} required={false} />
+      <Field
+        label="Invite token (optional)"
+        name="invite_token"
+        placeholder="Only if a team invited you"
+        defaultValue={inviteFromQuery}
+        required={false}
+      />
 
-      <p className="text-xs text-ink-soft">Ask your admin for the token, or switch to Business to create a new workspace.</p>
+      {/* Without a token this creates a personal workspace the account owns
+          outright — no invite to wait for, no admin to approve it. */}
+      <p className="text-xs text-ink-soft">
+        {inviteFromQuery
+          ? "You're joining an existing team with this invite."
+          : "Leave the token empty to get your own private workspace — you'll be its admin and can upload and analyse your data right away."}
+      </p>
 
       <label className="flex items-center gap-2 text-xs text-ink-soft">
         <input type="checkbox" required className="h-3.5 w-3.5 rounded border-border text-primary focus:ring-primary/20" />

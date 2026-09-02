@@ -26,13 +26,26 @@ export default function GsapProvider({
     document.documentElement.dataset.motion =
       getMotionOverride() === "on" ? "force" : "auto";
 
+    // Failsafe: ensure reveal content becomes visible even if ScrollTrigger stalls
+    // (slow network, handler error, etc.). GSAP will already have animated them
+    // before this fires in normal operation; this just unblocks invisibility.
+    const revealTimer = window.setTimeout(() => {
+      document.documentElement.classList.add("reveal-ready");
+    }, 1200);
+    const onFirstScroll = () => {
+      document.documentElement.classList.add("reveal-ready");
+    };
+    window.addEventListener("scroll", onFirstScroll, { once: true, passive: true });
+
     // Recalculate trigger positions after fonts/images settle.
     const refresh = () => ScrollTrigger.refresh();
     const id = window.setTimeout(refresh, 300);
     window.addEventListener("load", refresh);
     return () => {
       window.clearTimeout(id);
+      window.clearTimeout(revealTimer);
       window.removeEventListener("load", refresh);
+      window.removeEventListener("scroll", onFirstScroll);
     };
   }, []);
 

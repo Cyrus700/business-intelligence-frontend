@@ -45,8 +45,8 @@ export default function Security() {
 
   return (
     <Section id="security">
-      <div ref={root} className="grid items-center gap-14 lg:grid-cols-2">
-        <div>
+      <div ref={root} className="grid items-start lg:items-center gap-8 sm:gap-10 lg:gap-12 xl:gap-14 lg:grid-cols-2">
+        <div className="min-w-0">
           <SectionHeading
             center={false}
             eyebrow="Security & governance"
@@ -56,15 +56,15 @@ export default function Security() {
                 <span className="text-gradient">by default</span>
               </>
             }
-            subtitle="Sensitive business data deserves more than good intentions. Insightful bakes protection into every layer of the stack."
+            subtitle="Sensitive business data deserves more than good intentions. InsightFlow bakes protection into every layer of the stack."
           />
           <Reveal delay={0.1}>
-            <div className="mt-8 flex flex-wrap gap-2">
+            <div className="mt-6 sm:mt-8 flex flex-wrap gap-2">
               {["TLS 1.3", "AES-256", "JWT", "RBAC", "RLS"].map((t) => (
                 <span
                   key={t}
                   data-badge
-                  className="rounded-full border border-border bg-bg-soft px-3 py-1.5 font-mono text-xs font-medium text-ink-soft transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:text-primary"
+                  className="rounded-full border border-border bg-bg-soft px-3 py-1.5 font-mono text-xs font-medium text-ink-soft transition-all duration-300 lg:hover:-translate-y-0.5 hover:border-primary/40 hover:text-primary"
                 >
                   {t}
                 </span>
@@ -73,17 +73,17 @@ export default function Security() {
           </Reveal>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
           {SECURITY.map((s, i) => (
-            <Reveal key={s.title} delay={(i % 2) * 0.1}>
-              <div className="flex h-full flex-col gap-2 rounded-2xl border border-border bg-white p-5 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-lift">
+            <Reveal key={s.title} delay={(i % 2) * 0.1} className="h-full">
+              <div className="flex h-full flex-col gap-2 rounded-xl sm:rounded-2xl border border-border bg-white p-5 shadow-card transition-all duration-300 lg:hover:-translate-y-0.5 hover:border-accent/40 lg:hover:shadow-lift">
                 <span
                   data-sec-icon
-                  className="grid h-10 w-10 place-items-center rounded-lg bg-accent-50 text-accent"
+                  className="grid h-9 w-9 sm:h-10 sm:w-10 place-items-center rounded-lg bg-accent-50 text-accent shrink-0"
                 >
                   <Icon name="lock" className="h-5 w-5" />
                 </span>
-                <h3 className="mt-1 text-base font-semibold text-ink">{s.title}</h3>
+                <h3 className="mt-1 text-sm sm:text-base font-semibold text-ink leading-tight">{s.title}</h3>
                 <p className="text-sm leading-relaxed text-ink-soft">{s.body}</p>
               </div>
             </Reveal>

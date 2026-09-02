@@ -19,12 +19,12 @@ export default async function RegisterPage({
 }) {
   const { next, invite, token, tab } = await searchParams;
   const inviteToken = invite ?? token ?? "";
-  const tabParam = tab?.toLowerCase() === "normal" || tab?.toLowerCase() === "business" ? (tab.toLowerCase() as "normal" | "business") : undefined;
-  const defaultTab = inviteToken ? "normal" : (tabParam ?? "business");
+  const tabParam = tab?.toLowerCase() === "personal" || tab?.toLowerCase() === "business" ? (tab.toLowerCase() as "personal" | "business") : undefined;
+  const defaultTab = inviteToken ? "personal" : (tabParam ?? "personal");
   return (
     <AuthShell
       title="Create your account"
-      subtitle="Personal invite or new business — pick the tab that fits you."
+      subtitle="Personal account or a business workspace — pick the tab that fits."
       footer={
         <>
           Already have an account?{" "}

@@ -20,13 +20,13 @@ export default async function SignupPage({
 }) {
   const { next, invite, token, tab } = await searchParams;
   const inviteToken = invite ?? token ?? "";
-  const tabParam = tab?.toLowerCase() === "normal" || tab?.toLowerCase() === "business" ? (tab.toLowerCase() as "normal" | "business") : undefined;
-  const defaultTab = inviteToken ? "normal" : (tabParam ?? "business");
+  const tabParam = tab?.toLowerCase() === "personal" || tab?.toLowerCase() === "business" ? (tab.toLowerCase() as "personal" | "business") : undefined;
+  const defaultTab = inviteToken ? "personal" : (tabParam ?? "personal");
 
   return (
     <AuthShell
       title="Create your account"
-      subtitle="Choose how you want to join — personal invite or new business workspace."
+      subtitle="Start a personal workspace, or create one for your business."
       footer={
         <>
           Already have an account?{" "}

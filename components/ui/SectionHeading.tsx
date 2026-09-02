@@ -24,7 +24,7 @@ export default function SectionHeading({
     >
       {eyebrow && (
         <Reveal>
-          <span className="text-sm font-semibold uppercase tracking-wider text-primary">
+          <span className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-primary">
             {eyebrow}
           </span>
         </Reveal>
@@ -32,7 +32,7 @@ export default function SectionHeading({
       <Reveal delay={0.05}>
         <h2
           className={clsx(
-            "text-balance text-3xl font-semibold tracking-tight text-ink md:text-5xl",
+            "text-balance text-[1.75rem] sm:text-3xl lg:text-[2.5rem] xl:text-5xl font-semibold tracking-tight text-ink leading-[1.1]",
             center ? "max-w-3xl" : "max-w-2xl",
           )}
         >
@@ -43,7 +43,7 @@ export default function SectionHeading({
         <Reveal delay={0.1}>
           <p
             className={clsx(
-              "text-balance text-lg leading-relaxed text-ink-soft",
+              "text-balance text-base sm:text-lg leading-relaxed text-ink-soft",
               center ? "max-w-2xl" : "max-w-xl",
             )}
           >

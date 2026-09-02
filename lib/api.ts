@@ -38,6 +38,7 @@ export const queryKeys = {
   alerts: { all: ["alerts"] as const, rules: (p?: object) => ["alerts", "rules", p] as const },
   notifications: { all: ["notifications"] as const, list: (p?: object) => ["notifications", "list", p] as const },
   users: { all: ["users"] as const, list: () => ["users", "list"] as const, detail: (id: string) => ["users", "detail", id] as const },
+  businesses: { all: ["businesses"] as const, list: (p: object) => ["businesses", "list", p] as const, detail: (id: string) => ["businesses", "detail", id] as const },
   coverage: { all: ["coverage"] as const, data: () => ["coverage", "data"] as const },
   diagnostics: { all: ["diagnostics"] as const, change: (p?: object) => ["diagnostics", "change", p] as const },
   rbac: { all: ["rbac"] as const, matrix: () => ["rbac", "matrix"] as const, me: () => ["rbac", "me"] as const, audit: (limit: number) => ["rbac", "audit", limit] as const },
@@ -995,8 +996,30 @@ export async function decideRecommendation(
 
 // ── Organizations & Invites (multi-tenant) ────────────────────────────────
 
-export type OrganizationOut = { id: string; name: string; slug: string | null; is_legacy: boolean; status?: string; approved_at?: string | null; created_at: string; contact_email?: string | null; contact_name?: string | null };
+export type OrganizationOut = { id: string; name: string; slug: string | null; is_legacy: boolean; is_personal?: boolean; status?: string; approved_at?: string | null; approved_by?: string | null; rejected_at?: string | null; rejected_by?: string | null; rejection_reason?: string | null; created_at: string; updated_at?: string | null; contact_email?: string | null; contact_name?: string | null };
 export type InviteOut = { id: string; org_id: string; email: string | null; role: string; token: string; expires_at: string; accepted_at: string | null; created_at: string };
+
+export type BusinessOut = OrganizationOut & {
+  contact_email: string | null;
+  contact_name: string | null;
+  contact_email_verified: boolean | null;
+  member_count: number;
+  is_personal: boolean;
+  slug: string | null;
+};
+
+export type PaginatedBusinesses = {
+  items: BusinessOut[];
+  total: number;
+  page: number;
+  page_size: number;
+  pages: number;
+  counts: Record<string, number>;
+};
+
+export type BusinessDetailOut = BusinessOut & {
+  updated_at?: string | null;
+};
 
 export async function getOrganizations(): Promise<OrganizationOut[]> {
   return apiGet<OrganizationOut[]>("/auth/organizations");
@@ -1012,4 +1035,25 @@ export async function getInviteByToken(token: string): Promise<InviteOut> {
 }
 export async function registerBusiness(body: { org_name: string; email: string; password: string; full_name?: string | null }): Promise<{ token: string | null; user: UserProfile | null; organization: OrganizationOut; status: string; message?: string | null }> {
   return apiPost("/auth/register-org", body);
+}
+
+export async function getBusinesses(params?: {
+  status?: string;
+  search?: string;
+  page?: number;
+  page_size?: number;
+}): Promise<PaginatedBusinesses> {
+  return apiGet<PaginatedBusinesses>("/auth/admin/organizations", params as Record<string, string | number | boolean | undefined>);
+}
+
+export async function getBusiness(id: string): Promise<BusinessDetailOut> {
+  return apiGet<BusinessDetailOut>(`/auth/admin/organizations/${id}`);
+}
+
+export async function approveBusiness(id: string): Promise<BusinessOut> {
+  return apiPost<BusinessOut>(`/auth/admin/organizations/${id}/approve`, {});
+}
+
+export async function rejectBusiness(id: string, reason?: string): Promise<BusinessOut> {
+  return apiPost<BusinessOut>(`/auth/admin/organizations/${id}/reject`, { reason });
 }

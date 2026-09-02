@@ -9,6 +9,8 @@ export type NavItem = {
   permission?: Permission;
   /** Requires this built-in role floor in addition to `permission`. */
   minRole?: "analyst" | "manager" | "admin";
+  /** Only visible to System Admin (is_super_admin). */
+  superAdminOnly?: boolean;
 };
 
 export const DASH_NAV: NavItem[] = [
@@ -24,6 +26,7 @@ export const DASH_NAV: NavItem[] = [
   { label: "ML Monitoring", href: "/dashboard/ml-monitoring", icon: "cpu", permission: "ml:monitor" },
   { label: "System Health", href: "/dashboard/system-health", icon: "activity", permission: "health:system", minRole: "admin" },
   { label: "Admin Center", href: "/dashboard/admin", icon: "cpu", permission: "users:manage", minRole: "admin" },
+  { label: "Businesses", href: "/dashboard/businesses", icon: "building", permission: "users:manage", minRole: "admin", superAdminOnly: true },
   { label: "Data", href: "/dashboard/data", icon: "table", permission: "uploads:create" },
   {
     label: "Data Quality",

@@ -9,38 +9,44 @@ import {
   magnetic,
   pointerSpotlight,
   prefersReducedMotion,
-  splitChars,
   tilt,
 } from "@/lib/motion";
-import { useLandingData, useLandingLive } from "@/lib/landing-api";
+import { useLandingData } from "@/lib/landing-api";
+import type { PlatformSnapshot } from "@/lib/landing-live";
 import { HERO } from "@/lib/content";
 import Button from "@/components/ui/Button";
 import Icon from "@/components/ui/Icon";
-import Skeleton from "@/components/ui/Skeleton";
 import LiveDashboard from "@/components/ui/LiveDashboard";
 
-export default function Hero() {
+export default function Hero({
+  live,
+  lastRunLabel,
+}: {
+  live: PlatformSnapshot | null;
+  lastRunLabel: string | null;
+}) {
   const root = useRef<HTMLElement>(null);
   const { data } = useLandingData();
-  const { data: live } = useLandingLive();
   const hero = data?.hero ?? HERO;
 
-  // The three proof points under the CTAs — real platform-scale aggregates,
-  // nothing business-critical (no revenue, orders or margins).
-  const proof = [
-    {
-      value: live ? live.totals.records_unified.toLocaleString("en-IN") : null,
-      label: "rows unified",
-    },
-    {
-      value: live ? `${live.totals.data_sources}` : null,
-      label: "data sources connected",
-    },
-    {
-      value: live ? `${live.pipeline.success_rate_pct}%` : null,
-      label: "ETL success rate",
-    },
-  ];
+  // Social proof comes in with the HTML or not at all — when the warehouse is
+  // unreachable the hero keeps a static, timeless trust line instead.
+  const proof = live
+    ? [
+        {
+          value: live.totals.records_unified.toLocaleString("en-IN"),
+          label: "rows unified",
+        },
+        {
+          value: `${live.totals.data_sources}`,
+          label: "data sources connected",
+        },
+        {
+          value: `${live.pipeline.success_rate_pct}%`,
+          label: "ETL success rate",
+        },
+      ]
+    : null;
 
   useGSAP(
     () => {
@@ -50,8 +56,8 @@ export default function Hero() {
 
       if (reduce) {
         gsap.set(
-          q("[data-anim], [data-line], [data-mock], [data-eyebrow], [data-hero-sub], [data-hero-ctas], [data-proof]"),
-          { opacity: 1, y: 0, x: 0, scale: 1, yPercent: 0 },
+          q("[data-anim], [data-line], [data-mock], [data-eyebrow], [data-hero-sub], [data-hero-ctas], [data-proof], [data-panel-row], [data-dim-bar]"),
+          { opacity: 1, y: 0, x: 0, scale: 1, scaleX: 1, yPercent: 0 },
         );
         return;
       }
@@ -66,25 +72,15 @@ export default function Hero() {
         duration: DUR.fast,
       });
 
-      // Headline — masked line rise, then a per-character shimmer on the
-      // emphasised line so the type feels typeset rather than pasted in.
+      // Headline — clean masked line rise. No per-char split on the gradient
+      // line so background-clip:text stays reliable on every browser/device.
       tl.from(
         q("[data-line]"),
-        { yPercent: 112, duration: DUR.slow, ease: EASE.expo, stagger: 0.1 },
+        { yPercent: 110, duration: DUR.slow, ease: EASE.expo, stagger: 0.08 },
         "-=0.15",
       );
 
-      const accentLine = q("[data-line-accent]")[0] as HTMLElement | undefined;
-      if (accentLine) {
-        const chars = splitChars(accentLine);
-        tl.from(
-          chars,
-          { opacity: 0.25, duration: 0.5, stagger: 0.018, ease: "none" },
-          "-=0.7",
-        );
-      }
-
-      tl.from(q("[data-hero-sub]"), { y: 22, opacity: 0, duration: DUR.base }, "-=0.5");
+      tl.from(q("[data-hero-sub]"), { y: 22, opacity: 0, duration: DUR.base }, "-=0.45");
       tl.from(q("[data-hero-ctas]"), { y: 18, opacity: 0, duration: DUR.base }, "-=0.45");
       tl.from(
         q("[data-proof] > *"),
@@ -97,6 +93,19 @@ export default function Hero() {
         q("[data-mock]"),
         { y: 56, scale: 0.94, opacity: 0, duration: DUR.slow, ease: EASE.expo },
         "-=1.1",
+      );
+
+      // The panel's contents are server-rendered, so they belong to the same
+      // choreography — no second timeline waiting on a fetch.
+      tl.from(
+        q("[data-panel-row]"),
+        { y: 18, opacity: 0, duration: DUR.fast, stagger: 0.07 },
+        "-=0.7",
+      );
+      tl.from(
+        q("[data-dim-bar]"),
+        { scaleX: 0, transformOrigin: "left", duration: 0.7, stagger: 0.08 },
+        "-=0.5",
       );
 
       // Aurora blobs drift forever — the only looping motion on the page.
@@ -161,81 +170,48 @@ export default function Hero() {
     { scope: root },
   );
 
-  // Panel contents only exist once /landing/live resolves, so they get their
-  // own timeline. Keeping it separate stops the hero copy replaying on fetch.
-  useGSAP(
-    () => {
-      if (!live || !root.current) return;
-      const q = gsap.utils.selector(root);
-      if (prefersReducedMotion()) return;
-
-      const tl = gsap.timeline({ defaults: { ease: EASE.out } });
-
-      tl.from(q("[data-panel-row]"), {
-        y: 18,
-        opacity: 0,
-        duration: DUR.fast,
-        stagger: 0.07,
-      });
-
-      tl.from(
-        q("[data-dim-bar]"),
-        { scaleX: 0, transformOrigin: "left", duration: 0.7, stagger: 0.08 },
-        "-=0.6",
-      );
-    },
-    { scope: root, dependencies: [live] },
-  );
-
   return (
     <section
       ref={root}
-      className="relative overflow-hidden pt-32 pb-20 md:pt-40 md:pb-28"
+      className="relative overflow-hidden pt-28 pb-12 sm:pt-32 sm:pb-16 lg:pt-36 lg:pb-24 xl:pb-28 isolate"
     >
       {/* Layered background: wash → aurora → grid. */}
       <div className="hero-wash pointer-events-none absolute inset-0 -z-30" />
       <div className="aurora -z-20" aria-hidden>
         <span
           data-blob
-          className="left-[-10%] top-[-12%] h-[38rem] w-[38rem] bg-primary/25"
+          className="left-[-12%] top-[-10%] h-[22rem] w-[22rem] sm:h-[30rem] sm:w-[30rem] lg:h-[38rem] lg:w-[38rem] bg-primary/20 sm:bg-primary/25"
         />
         <span
           data-blob
-          className="right-[-12%] top-[-6%] h-[32rem] w-[32rem] bg-sky/25"
+          className="right-[-15%] top-[2%] h-[20rem] w-[20rem] sm:h-[26rem] sm:w-[26rem] lg:h-[32rem] lg:w-[32rem] bg-sky/20 sm:bg-sky/25"
         />
         <span
           data-blob
-          className="bottom-[-24%] left-[35%] h-[30rem] w-[30rem] bg-accent/20"
+          className="bottom-[-18%] left-[28%] h-[20rem] w-[20rem] sm:h-[26rem] sm:w-[26rem] lg:h-[30rem] lg:w-[30rem] bg-accent/15 sm:bg-accent/20"
         />
       </div>
-      <div className="grid-lines pointer-events-none absolute inset-0 -z-10" aria-hidden />
+      <div className="grid-lines pointer-events-none absolute inset-0 -z-10 opacity-60 sm:opacity-100" aria-hidden />
 
-      <div className="container-page grid items-center gap-14 lg:grid-cols-[1.02fr_0.98fr]">
-        <div data-hero-copy className="flex flex-col items-start gap-6">
+      <div className="container-page grid items-start lg:items-center gap-8 sm:gap-10 lg:gap-12 xl:gap-14 lg:grid-cols-[1.05fr_0.95fr]">
+        <div data-hero-copy className="flex w-full min-w-0 flex-col items-stretch sm:items-start gap-5 sm:gap-6">
           <span
             data-eyebrow
-            className="surface-glass inline-flex items-center gap-2.5 rounded-full px-3.5 py-1.5 text-xs font-medium text-ink-soft"
+            className="surface-glass inline-flex max-w-full flex-wrap items-center gap-2 rounded-full px-3 py-1.5 text-[11px] sm:gap-2.5 sm:px-3.5 sm:text-xs font-medium text-ink-soft leading-snug"
           >
-            <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-accent text-accent" />
-            {live ? (
-              `Live · ${live.totals.records_unified.toLocaleString("en-IN")} rows across ${live.totals.data_sources} sources`
-            ) : (
-              <span className="inline-flex items-center gap-2">
-                Connecting to the warehouse
-                <Skeleton className="h-3 w-24" />
-              </span>
-            )}
+            <span className="pulse-dot h-1.5 w-1.5 shrink-0 rounded-full bg-accent text-accent" />
+            <span className="break-words">{hero.eyebrow}</span>
           </span>
 
-          <h1 className="text-4xl font-semibold leading-[1.08] tracking-tight text-ink sm:text-5xl lg:text-[3.85rem]">
+          <h1 className="text-[1.85rem] leading-[1.08] sm:text-4xl lg:text-[2.95rem] xl:text-[3.65rem] font-semibold tracking-tight text-ink text-pretty">
             {hero.title.map((line, i) => {
               const isLast = i === hero.title.length - 1;
               return (
-                <span key={i} className="block overflow-hidden pb-[0.1em] -mb-[0.1em]">
+                <span key={i} className="block overflow-hidden pb-[0.12em] -mb-[0.08em]">
                   <span
                     data-line
-                    {...(isLast ? { "data-line-accent": "" } : {})}
-                    className={`block will-change-transform ${isLast ? "text-gradient" : ""}`}
+                    className={`block will-change-transform ${isLast ? "text-gradient" : "text-ink"}`}
+                    style={{ opacity: 1 }}
                   >
                     {line}
                   </span>
@@ -246,47 +222,67 @@ export default function Hero() {
 
           <p
             data-hero-sub
-            className="max-w-xl text-lg leading-relaxed text-ink-soft"
+            className="max-w-xl text-[15px] sm:text-base lg:text-lg leading-relaxed text-ink-soft text-pretty"
           >
             {hero.subtitle}
           </p>
 
-          <div data-hero-ctas className="flex flex-col gap-3 sm:flex-row">
-            <span data-magnetic className="inline-block">
-              <Button href="/register" variant="primary" size="lg">
+          <div data-hero-ctas className="flex flex-col gap-3 sm:flex-row w-full sm:w-auto">
+            <span data-magnetic className="inline-flex w-full sm:w-auto">
+              <Button href="/register" variant="primary" size="lg" className="w-full sm:w-auto justify-center">
                 {hero.primaryCta}
                 <Icon name="arrow" className="h-4 w-4" />
               </Button>
             </span>
-            <span data-magnetic className="inline-block">
-              <Button href="/login" variant="secondary" size="lg">
+            <span data-magnetic className="inline-flex w-full sm:w-auto">
+              <Button href="/login" variant="secondary" size="lg" className="w-full sm:w-auto justify-center">
                 Sign in
               </Button>
             </span>
           </div>
-          <p data-hero-ctas className="text-xs text-ink-soft">Have an invite? <a href="/signup" className="font-medium text-primary underline underline-offset-2">Join your team →</a> <span className="text-ink-muted">·</span> <a href="/register" className="font-medium text-primary underline underline-offset-2">Register business</a></p>
+          <p data-hero-ctas className="text-xs leading-relaxed text-ink-soft flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="inline-flex flex-wrap items-center gap-1.5">
+              Working solo?{" "}
+              <a
+                href="/signup?tab=personal"
+                className="font-medium text-primary underline decoration-primary/30 underline-offset-2 hover:decoration-primary"
+              >
+                Create a personal workspace →
+              </a>
+            </span>
+            <span className="hidden text-ink-muted sm:inline">·</span>
+            <a href="/register?tab=business" className="font-medium text-primary underline decoration-primary/30 underline-offset-2 hover:decoration-primary">Register a business</a>
+          </p>
 
-          {/* Proof strip — real platform-scale figures, not marketing rounding. */}
-          <dl
-            data-proof
-            className="mt-2 flex flex-wrap items-center gap-x-8 gap-y-4 border-t border-border/70 pt-6"
-          >
-            {proof.map((p) => (
-              <div key={p.label}>
-                <dt className="font-mono text-xl font-semibold tabular-nums text-ink">
-                  {p.value ?? <Skeleton className="h-6 w-20" />}
-                </dt>
-                <dd className="mt-0.5 text-xs text-ink-muted">{p.label}</dd>
-              </div>
-            ))}
-          </dl>
+          {/* Proof strip — only when live data exists; otherwise a static trust line. */}
+          {proof ? (
+            <dl
+              data-proof
+              className="mt-1 sm:mt-2 grid grid-cols-3 gap-4 sm:flex sm:flex-wrap sm:items-center sm:gap-x-6 lg:gap-x-8 gap-y-4 border-t border-border/60 pt-5 sm:pt-6 w-full"
+            >
+              {proof.map((p) => (
+                <div key={p.label} className="min-w-0">
+                  <dt className="font-mono text-base sm:text-xl font-semibold tabular-nums text-ink leading-none">
+                    {p.value}
+                  </dt>
+                  <dd className="mt-1.5 text-[10px] sm:text-xs leading-tight text-ink-muted break-words">{p.label}</dd>
+                </div>
+              ))}
+            </dl>
+          ) : (
+            <div className="mt-1 sm:mt-2 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-border/60 pt-5 sm:pt-6 w-full text-xs sm:text-sm text-ink-soft">
+              <span className="inline-flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-accent shrink-0" /> Free to start</span>
+              <span className="inline-flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-accent shrink-0" /> Setup in 30 seconds</span>
+              <span className="inline-flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-accent shrink-0" /> No credit card</span>
+            </div>
+          )}
         </div>
 
-        <div data-mock className="relative w-full will-change-transform">
+        <div data-mock className="relative w-full min-w-0 will-change-transform max-w-[520px] mx-auto lg:max-w-none lg:mx-0">
           <div data-parallax className="w-full">
             <div data-float className="w-full">
               <div data-tilt className="w-full [transform-style:preserve-3d]">
-                <LiveDashboard live={live} className="shadow-hero" />
+                <LiveDashboard live={live} lastRunLabel={lastRunLabel} className="shadow-hero" />
               </div>
             </div>
           </div>
