@@ -1,6 +1,5 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import PageHeader from "@/components/dashboard/PageHeader";
 import Icon from "@/components/ui/Icon";
 import Greeting from "@/components/dashboard/Greeting";
@@ -15,16 +14,19 @@ import TransactionsTable from "@/components/dashboard/live/TransactionsTable";
 import LowStock from "@/components/dashboard/live/LowStock";
 import LiveRecommendations from "@/components/dashboard/live/LiveRecommendations";
 import RoleOverview from "@/components/dashboard/role/RoleOverview";
-import DataFreshness from "@/components/dashboard/live/DataFreshness";
+import DataFreshness, { useDataCoverage } from "@/components/dashboard/live/DataFreshness";
 import { RangePicker } from "@/lib/filters";
 import { useDashboardBase } from "@/lib/use-role";
 import { useAuth } from "@/lib/auth-context";
-import { apiGet, useApi } from "@/lib/api";
+import { useOrganizations } from "@/lib/api";
 
-function BusinessEmptyState({ businessName }: { businessName: string | null }) {
+function BusinessEmptyState() {
   const base = useDashboardBase();
-  const { data: coverage } = useApi<{ sales: { row_count: number }; expenses: { row_count: number } }>("/data-coverage", undefined, ["coverage", "empty-check"] as any);
-  const hasData = (coverage as any)?.sales?.row_count > 0 || (coverage as any)?.expenses?.row_count > 0;
+  // Reuses DataFreshness's coverage query instead of holding a second key for
+  // the same endpoint — one `/data-coverage` request serves both.
+  const { data: coverage } = useDataCoverage();
+  const hasData =
+    (coverage?.sales?.row_count ?? 0) > 0 || (coverage?.expenses?.row_count ?? 0) > 0;
   if (hasData || !coverage) return null;
   return (
     <div className="mb-6 rounded-xl border border-border bg-white p-4">
@@ -38,11 +40,7 @@ function BusinessEmptyState({ businessName }: { businessName: string | null }) {
 export default function OverviewClient() {
   const base = useDashboardBase();
   const { user } = useAuth();
-  const { data: orgs } = useQuery<{ id: string; name: string }[]>({
-    queryKey: ["orgs-overview", user?.id],
-    queryFn: () => apiGet("/auth/organizations"),
-    enabled: !!user,
-  });
+  const { data: orgs } = useOrganizations(!!user);
   const businessName = orgs?.[0]?.name ?? null;
   const isSuper = !!user?.is_super_admin;
   const roleLabel = user?.role === "admin" ? (isSuper ? "Platform Super-Admin" : "Business Admin") : user?.role === "manager" ? "Manager" : "Analyst";
@@ -60,7 +58,7 @@ export default function OverviewClient() {
       <DataFreshness className="mb-6" />
 
       {/* Onboarding for brand-new business with no data */}
-      <BusinessEmptyState businessName={businessName} />
+      <BusinessEmptyState />
 
       <KpiRow />
 

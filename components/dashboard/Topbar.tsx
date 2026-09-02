@@ -2,14 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
 import { clsx } from "@/lib/cx";
 import { useAuth } from "@/lib/auth-context";
 import { useRole, useDashboardBase } from "@/lib/use-role";
 import { getRoleInfo, type Role } from "@/lib/permissions";
 import Icon from "@/components/ui/Icon";
 import OrgSwitcher from "@/components/dashboard/OrgSwitcher";
-import { apiGet } from "@/lib/api";
+import { useOrganizations } from "@/lib/api";
 
 const ROLE_BADGE: Record<Role, string> = {
   analyst: "bg-green-100 text-green-700",
@@ -45,11 +44,7 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
   const email = user?.email ?? "";
   const initial = name?.charAt(0)?.toUpperCase() ?? "U";
   const roleInfo = getRoleInfo(role);
-  const { data: orgs } = useQuery<{ id: string; name: string }[]>({
-    queryKey: ["orgs-topbar", user?.id],
-    queryFn: () => apiGet("/auth/organizations"),
-    enabled: !!user,
-  });
+  const { data: orgs } = useOrganizations(!!user);
   const businessName = orgs?.[0]?.name ?? null;
   const isSuper = !!user?.is_super_admin;
 

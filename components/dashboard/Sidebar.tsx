@@ -63,6 +63,12 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
               key={item.href}
               href={resolvedHref}
               onClick={onNavigate}
+              // The whole nav sits in the viewport at once, so the default
+              // viewport-prefetch fires an RSC request for every dashboard
+              // route the moment the shell paints — a dozen payloads competing
+              // with the data the user actually asked for. `false` keeps
+              // hover-prefetch, which warms the route just as effectively.
+              prefetch={false}
               className={clsx(
                 "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
                 active

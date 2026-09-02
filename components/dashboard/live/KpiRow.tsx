@@ -2,7 +2,7 @@
 
 import { npr, nprCompact, useApi } from "@/lib/api";
 import type { KpiSummary, Timeseries } from "@/lib/api";
-import { apiParams, useFilters } from "@/lib/filters";
+import { apiParams, granularityFor, useFilters } from "@/lib/filters";
 import KpiCard from "../KpiCard";
 import { PanelError, PanelSkeleton } from "./Status";
 
@@ -16,11 +16,21 @@ const CARDS: { metric: string; label: string; tone: string; money: boolean }[] =
 export default function KpiRow() {
   const { filters } = useFilters();
   const params = apiParams(filters);
+  // Same granularity as the revenue-vs-expenses chart on purpose: the two
+  // components then share one cache entry per metric instead of each issuing
+  // its own near-identical /kpis/timeseries request. Sparklines are shape-only,
+  // so the coarser bucketing at 90d/1y costs nothing visually.
+  const granularity = granularityFor(filters.range);
   const summary = useApi<KpiSummary>("/kpis/summary", params);
-  const revSeries = useApi<Timeseries>("/kpis/timeseries", { ...params, metric: "revenue" });
+  const revSeries = useApi<Timeseries>("/kpis/timeseries", {
+    ...params,
+    metric: "revenue",
+    granularity,
+  });
   const expSeries = useApi<Timeseries>("/kpis/timeseries", {
     ...params,
     metric: "expense_total",
+    granularity,
   });
 
   if (summary.error) return <PanelError message={summary.error} />;

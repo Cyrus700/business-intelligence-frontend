@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { getToken } from "@/lib/auth";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
@@ -51,21 +51,70 @@ async function authHeaders(): Promise<Record<string, string>> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+export type QueryParams = Record<string, string | number | boolean | undefined | null>;
+
+/** Build the request URL with empty/undefined params dropped and keys sorted.
+ *
+ * Sorting matters beyond tidiness: it makes the URL a canonical identity for a
+ * request, which is what both the in-flight coalescer below and the HTTP cache
+ * key off. `{metric,from}` and `{from,metric}` must not be two requests. */
+function buildUrl(path: string, params?: QueryParams): string {
+  const url = new URL(`${BASE}${path}`);
+  const entries = Object.entries(params ?? {})
+    .filter(([, v]) => v !== undefined && v !== null && v !== "")
+    .sort(([a], [b]) => a.localeCompare(b));
+  for (const [k, v] of entries) url.searchParams.set(k, String(v));
+  return url.toString();
+}
+
+/** Canonical request params for a query key — same normalisation as the URL,
+ * so two components asking for the same data share one cache entry. */
+export function normalizeParams(params?: QueryParams): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(params ?? {}).sort(([a], [b]) => a.localeCompare(b))) {
+    if (v !== undefined && v !== null && v !== "") out[k] = String(v);
+  }
+  return out;
+}
+
+// Coalesces concurrent identical GETs into a single network request. React
+// Query already dedupes within its own cache, but plenty of call sites use the
+// raw helpers (auth bootstrap, imperative refreshes, non-hook modules) and
+// several panels ask for the same URL on the same tick during first paint.
+const inFlight = new Map<string, Promise<unknown>>();
+
 export async function apiGet<T>(
   path: string,
-  params?: Record<string, string | number | boolean | undefined>,
+  params?: QueryParams,
+  signal?: AbortSignal,
 ): Promise<T> {
-  const url = new URL(`${BASE}${path}`);
-  for (const [k, v] of Object.entries(params ?? {})) {
-    if (v !== undefined && v !== "") url.searchParams.set(k, String(v));
-  }
-  const headers = await authHeaders();
-  const res = await fetch(url, { headers });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new ApiError(res.status, String(body.detail ?? res.statusText));
-  }
-  return res.json() as Promise<T>;
+  const url = buildUrl(path, params);
+
+  const send = async () => {
+    const headers = await authHeaders();
+    const res = await fetch(url, { headers, signal });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ detail: res.statusText }));
+      throw new ApiError(res.status, String(body.detail ?? res.statusText));
+    }
+    return res.json() as Promise<T>;
+  };
+
+  // A cancellable caller owns its request outright — sharing it would let one
+  // component's unmount abort another's still-needed fetch.
+  if (signal) return send();
+
+  // Key includes the token so a sign-in/out never serves the previous user's
+  // in-flight response.
+  const key = `${getToken() ?? ""}|${url}`;
+  const pending = inFlight.get(key) as Promise<T> | undefined;
+  if (pending) return pending;
+
+  const request = send().finally(() => {
+    inFlight.delete(key);
+  });
+  inFlight.set(key, request);
+  return request;
 }
 
 export async function apiPost<T>(path: string, body: unknown): Promise<T> {
@@ -127,27 +176,37 @@ export async function apiDelete(path: string): Promise<void> {
 export type UseApiOptions = {
   /** How long a response stays fresh before a background refetch (ms). */
   staleTime?: number;
-  /** Polling interval; pass false to disable periodic refetching entirely. */
+  /** Opt in to polling for genuinely live panels. Off by default — a global
+   *  interval would multiply by every mounted panel. */
   refetchInterval?: number | false;
-  /** Refetch when the tab regains focus (only while stale). */
+  /** Refetch when the tab regains focus (only while stale). Off by default. */
   refetchOnWindowFocus?: boolean;
+  /** Skip the request entirely until a precondition is met (e.g. auth ready). */
+  enabled?: boolean;
 };
 
 export function useApi<T>(
   path: string,
-  params?: Record<string, string | number | boolean | undefined>,
+  params?: QueryParams,
   queryKey?: unknown[],
   retry?: number | boolean,
   options?: UseApiOptions,
 ) {
   const maxRetries = typeof retry === "number" ? retry : retry === true ? 2 : 0;
-  const key = queryKey ?? [path, params];
-  const { data, error, isLoading } = useQuery<T>({
+  // Normalised params in the key: components that request the same data with
+  // differently-ordered or partly-empty param objects now hit one cache entry
+  // instead of firing one request each.
+  const key = queryKey ?? [path, normalizeParams(params)];
+  const { data, error, isLoading, isFetching } = useQuery<T>({
     queryKey: key,
-    queryFn: () => apiGet<T>(path, params),
-    staleTime: options?.staleTime ?? 30_000,
-    refetchInterval: options?.refetchInterval,
-    refetchOnWindowFocus: options?.refetchOnWindowFocus,
+    queryFn: ({ signal }) => apiGet<T>(path, params, signal),
+    staleTime: options?.staleTime,
+    refetchInterval: options?.refetchInterval ?? false,
+    refetchOnWindowFocus: options?.refetchOnWindowFocus ?? false,
+    enabled: options?.enabled,
+    // Keep the previous range's data on screen while the new range loads, so
+    // changing the date filter doesn't blank every panel into a skeleton.
+    placeholderData: keepPreviousData,
     retry: (failureCount, err) => {
       if (failureCount >= maxRetries) return false;
       if (err instanceof ApiError && err.status < 500) return false;
@@ -159,6 +218,8 @@ export function useApi<T>(
     data: data ?? null,
     error: error ? (error instanceof ApiError ? error.message : "Request failed") : null,
     loading: isLoading,
+    /** True during background refreshes too — for subtle "updating" affordances. */
+    fetching: isFetching,
   };
 }
 
@@ -1023,6 +1084,21 @@ export type BusinessDetailOut = BusinessOut & {
 
 export async function getOrganizations(): Promise<OrganizationOut[]> {
   return apiGet<OrganizationOut[]>("/auth/organizations");
+}
+
+/** Shared org list for the whole chrome.
+ *
+ * The topbar, the overview header and the super-admin switcher all need it;
+ * before this hook each held its own query key and the page issued three
+ * identical `/auth/organizations` requests. Org membership barely changes
+ * within a session, so it is cached aggressively. */
+export function useOrganizations(enabled = true) {
+  return useQuery<OrganizationOut[]>({
+    queryKey: ["organizations"],
+    queryFn: ({ signal }) => apiGet<OrganizationOut[]>("/auth/organizations", undefined, signal),
+    enabled,
+    staleTime: 15 * 60_000,
+  });
 }
 export async function createInvite(body: { email?: string; role: string }): Promise<InviteOut> {
   return apiPost<InviteOut>("/auth/invite", body);

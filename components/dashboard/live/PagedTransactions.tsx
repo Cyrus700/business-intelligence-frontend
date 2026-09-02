@@ -9,7 +9,15 @@ type SortBy = "txn_date" | "product" | "channel" | "region" | "quantity" | "tota
 type SortDir = "asc" | "desc";
 
 function WorkerStrip() {
-  const { data, error } = useApi<{ pool: any; queue_depth: number; recent_runs: any[]; etl_recent: any[] }>("/admin/workers/status");
+  // Queue depth is the one genuinely live number on this page, so this strip
+  // opts into polling explicitly rather than relying on a global interval.
+  const { data, error } = useApi<{ pool: any; queue_depth: number; recent_runs: any[]; etl_recent: any[] }>(
+    "/admin/workers/status",
+    undefined,
+    undefined,
+    false,
+    { refetchInterval: 60_000, staleTime: 30_000 },
+  );
   // Fallback to simple watermark if workers endpoint not accessible (analyst role)
   if (error || !data) {
     return (

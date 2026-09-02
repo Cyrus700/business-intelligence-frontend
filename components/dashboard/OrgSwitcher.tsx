@@ -1,21 +1,17 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { apiGet } from "@/lib/api";
+import { useOrganizations } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
-
-type Org = { id: string; name: string; slug: string | null; is_legacy: boolean };
 
 export default function OrgSwitcher() {
   const { user } = useAuth();
-  // Only super-admin sees switcher
-  if (!user?.is_super_admin) return null;
+  const isSuperAdmin = !!user?.is_super_admin;
+  // Shared query key with the topbar/overview, and gated so non-super-admins
+  // never trigger the request. The hook must run unconditionally — an early
+  // return above it would break the rules of hooks when `user` resolves.
+  const { data } = useOrganizations(isSuperAdmin);
 
-  const { data } = useQuery<Org[]>({
-    queryKey: ["orgs"],
-    queryFn: () => apiGet<Org[]>("/auth/organizations"),
-  });
-
+  if (!isSuperAdmin) return null;
   if (!data || data.length <= 1) return null;
 
   return (

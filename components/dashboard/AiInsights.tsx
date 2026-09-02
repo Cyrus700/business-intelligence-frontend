@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { clsx } from "@/lib/cx";
 import Icon from "@/components/ui/Icon";
-import { getAIInsights } from "@/lib/api";
+import { useApi } from "@/lib/api";
 import type { AIInsight } from "@/lib/api";
 
 const TONE: Record<string, string> = {
@@ -13,25 +12,18 @@ const TONE: Record<string, string> = {
   info: "bg-bg-soft text-ink-soft",
 };
 
-export default function AiInsights() {
-  const [insights, setInsights] = useState<AIInsight[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    getAIInsights("dashboard")
-      .then((data) => {
-        if (!cancelled) setInsights(data);
-      })
-      .catch((e) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load insights");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => { cancelled = true; };
-  }, []);
+export default function AiInsights({ scope = "dashboard" }: { scope?: string }) {
+  // Insights are derived from the same 30-day window the rest of the page
+  // reads, and are expensive to generate server-side — so they are cached for
+  // 10 minutes rather than regenerated on every mount.
+  const { data, error, loading } = useApi<AIInsight[]>(
+    "/ai/insights",
+    { scope },
+    undefined,
+    false,
+    { staleTime: 10 * 60_000 },
+  );
+  const insights = data ?? [];
 
   if (loading) {
     return (
