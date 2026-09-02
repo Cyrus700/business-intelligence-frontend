@@ -87,7 +87,7 @@ export default function DataQualityClient() {
     <>
       <PageHeader
         title="Data Quality"
-        subtitle="Measurable quality across completeness, validity, consistency, uniqueness, timeliness and accuracy."
+        subtitle="Quality."
         action={
           canRun ? (
             <button

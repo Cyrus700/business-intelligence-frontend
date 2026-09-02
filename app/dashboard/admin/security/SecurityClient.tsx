@@ -71,7 +71,7 @@ export default function SecurityClient() {
     <>
       <PageHeader
         title="Security Center"
-        subtitle="SSRF protection, upload hardening, rate limiting, audit logging, and authentication security."
+        subtitle="Security."
       />
 
       <Panel title="Security Overview" subtitle={data ? "All systems operational" : "Loading…"}>

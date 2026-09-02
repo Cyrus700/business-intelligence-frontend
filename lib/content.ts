@@ -14,12 +14,12 @@ export const NAV_LINKS = [
 ];
 
 export const HERO = {
-  eyebrow: "AI-driven analytics platform",
+  eyebrow: "Multi-tenant • One platform, every business isolated",
   title: ["One dashboard for", "every business decision."],
   subtitle:
-    "Insightful brings your spreadsheets, databases and APIs into a single cloud dashboard, then uses AI to forecast trends, flag anomalies and explain what to do next.",
-  primaryCta: "Get started",
-  secondaryCta: "See how it works",
+    "Register your business in 30 seconds — get your own isolated analytics workspace with forecasts, anomalies and plain-language recommendations. Invite your managers and analysts, connect your data, and decide faster. No cross-business data leakage, ever.",
+  primaryCta: "Register your business",
+  secondaryCta: "How business workspaces work",
 };
 
 export const STATS = [

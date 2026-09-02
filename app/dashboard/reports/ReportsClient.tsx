@@ -743,7 +743,7 @@ function BuilderModal({ onClose, initial }: { onClose: () => void; initial: { te
   const [builderFileName, setBuilderFileName] = useState("");
   const [error, setError] = useState("");
   const [stageIdx, setStageIdx] = useState(0);
-  const [done, setDone] = useState<ReportOut | null>(null);
+  const [done, setDone] = useState<any>(null);
   const [emailMe, setEmailMe] = useState(true);
 
   const span = daysBetween(from, to);
@@ -764,7 +764,7 @@ function BuilderModal({ onClose, initial }: { onClose: () => void; initial: { te
         prev[r.id] = desired;
         localStorage.setItem(key, JSON.stringify(prev));
       } catch {}
-      toast(`Report exported`, { description: emailMe ? `Your ${r.format.toUpperCase()} is ready — email queued to your inbox.` : `${r.format.toUpperCase()} ready for download.`, type: "success" });
+      toast(`Report exported`, { description: emailMe ? `Your ${(r.format ?? "pdf").toString().toUpperCase()} is ready — email queued to your inbox.` : `${(r.format ?? "pdf").toString().toUpperCase()} ready for download.`, type: "success" });
     },
     onError: (e: Error) => {
       setError(e.message);
@@ -824,7 +824,7 @@ function BuilderModal({ onClose, initial }: { onClose: () => void; initial: { te
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-emerald-900">Done — Complete ✓</p>
               <p className="text-xs text-emerald-700">
-                {fmtDate(done.period_start)} → {fmtDate(done.period_end)} · {done.format.toUpperCase()}
+                {fmtDate(done.period_start)} → {fmtDate(done.period_end)} · {(done.format ?? "pdf").toString().toUpperCase()}
               </p>
             </div>
             <DownloadButton report={done} fileName={builderFileName.trim() || builderDefaultName} />
@@ -1113,7 +1113,7 @@ export default function ReportsClient() {
         localStorage.setItem(key, JSON.stringify(prev));
       } catch {}
       toast("Report exported", {
-        description: emailMe ? `Your ${(r as ReportOut).format.toUpperCase()} is ready — email queued to your inbox.` : `${(r as ReportOut).format.toUpperCase()} ready for download.`,
+        description: emailMe ? `Your ${((r as any).format ?? "pdf").toString().toUpperCase()} is ready — email queued to your inbox.` : `${((r as any).format ?? "pdf").toString().toUpperCase()} ready for download.`,
         type: "success",
       });
     },
@@ -1178,7 +1178,7 @@ export default function ReportsClient() {
 
   return (
     <>
-      <PageHeader title="Reports" subtitle="One-click export with crystal-clear Pending → Complete. No maze, just premium." action={<RangePicker />} />
+      <PageHeader title="Reports" subtitle="Exports." action={<RangePicker />} />
 
       {role === "analyst" && (
         <div className="mb-4 flex items-start gap-3 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
@@ -1326,7 +1326,7 @@ export default function ReportsClient() {
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-emerald-900">Complete ✓</p>
-                    <p className="text-xs text-emerald-700">{fmtDate(doneReport.period_start)} → {fmtDate(doneReport.period_end)} · {doneReport.format.toUpperCase()}</p>
+                    <p className="text-xs text-emerald-700">{fmtDate(doneReport.period_start)} → {fmtDate(doneReport.period_end)} · {(doneReport.format ?? "pdf").toString().toUpperCase()}</p>
                   </div>
                   <DownloadButton report={doneReport} fileName={fileName.trim() || defaultFileName} />
                 </div>

@@ -169,6 +169,8 @@ export type UserProfile = {
   full_name: string | null;
   role: "admin" | "manager" | "analyst";
   department: string | null;
+  org_id: string | null;
+  is_super_admin: boolean;
   is_active: boolean;
   created_at: string;
 };
@@ -989,4 +991,25 @@ export async function decideRecommendation(
   decision: DecisionBody["decision"],
 ): Promise<RecommendationOut> {
   return apiPost<RecommendationOut>(`/recommendations/${insightId}/decide`, { decision });
+}
+
+// ── Organizations & Invites (multi-tenant) ────────────────────────────────
+
+export type OrganizationOut = { id: string; name: string; slug: string | null; is_legacy: boolean; status?: string; approved_at?: string | null; created_at: string; contact_email?: string | null; contact_name?: string | null };
+export type InviteOut = { id: string; org_id: string; email: string | null; role: string; token: string; expires_at: string; accepted_at: string | null; created_at: string };
+
+export async function getOrganizations(): Promise<OrganizationOut[]> {
+  return apiGet<OrganizationOut[]>("/auth/organizations");
+}
+export async function createInvite(body: { email?: string; role: string }): Promise<InviteOut> {
+  return apiPost<InviteOut>("/auth/invite", body);
+}
+export async function getInvites(): Promise<InviteOut[]> {
+  return apiGet<InviteOut[]>("/auth/invites");
+}
+export async function getInviteByToken(token: string): Promise<InviteOut> {
+  return apiGet<InviteOut>(`/auth/invites/${token}`);
+}
+export async function registerBusiness(body: { org_name: string; email: string; password: string; full_name?: string | null }): Promise<{ token: string | null; user: UserProfile | null; organization: OrganizationOut; status: string; message?: string | null }> {
+  return apiPost("/auth/register-org", body);
 }

@@ -14,6 +14,7 @@ import { ErrorBoundary } from "@/lib/error-boundary";
 import { useRole, hasMinRole, useDashboardBase } from "@/lib/use-role";
 import { apiGet, apiPost, apiPatch, queryKeys } from "@/lib/api";
 import type { UserProfile, UserCreateBody, UserUpdateBody, PaginatedUsers } from "@/lib/api";
+import InvitePanel from "@/components/dashboard/InvitePanel";
 
 type ModalMode = "create" | "edit" | null;
 
@@ -313,18 +314,22 @@ function UsersTable() {
   return (
     <>
       <PageHeader
-        title="Users"
-        subtitle="Manage users, roles and access permissions."
+        title="Members"
+        subtitle="People in this workspace."
         action={
           <button
             onClick={openCreate}
-            className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-white shadow-lift hover:bg-primary-600"
+            className="inline-flex h-9 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-white hover:bg-primary-600"
           >
-            <Icon name="user" className="h-4 w-4" />
-            Add user
+            <Icon name="plus" className="h-4 w-4" />
+            Add member
           </button>
         }
       />
+
+      <div className="mb-6">
+        <InvitePanel />
+      </div>
 
       <Panel>
         <div className="mb-4">

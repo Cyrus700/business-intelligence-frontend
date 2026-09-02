@@ -155,8 +155,8 @@ export default function Navbar() {
               <Button href="/login" variant="ghost" size="md">
                 Log in
               </Button>
-              <Button href="/signup" variant="primary" size="md">
-                Get started
+              <Button href="/register" variant="primary" size="md">
+                Register
               </Button>
             </>
           )}
@@ -222,8 +222,8 @@ export default function Navbar() {
                 <Button href="/login" variant="secondary" size="md" className="flex-1">
                   Log in
                 </Button>
-                <Button href="/signup" variant="primary" size="md" className="flex-1">
-                  Get started
+                <Button href="/register" variant="primary" size="md" className="flex-1">
+                  Register
                 </Button>
               </>
             )}

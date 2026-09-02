@@ -253,17 +253,18 @@ export default function Hero() {
 
           <div data-hero-ctas className="flex flex-col gap-3 sm:flex-row">
             <span data-magnetic className="inline-block">
-              <Button href="/signup" variant="primary" size="lg">
+              <Button href="/register" variant="primary" size="lg">
                 {hero.primaryCta}
                 <Icon name="arrow" className="h-4 w-4" />
               </Button>
             </span>
             <span data-magnetic className="inline-block">
-              <Button href="#how" variant="secondary" size="lg">
-                {hero.secondaryCta}
+              <Button href="/login" variant="secondary" size="lg">
+                Sign in
               </Button>
             </span>
           </div>
+          <p data-hero-ctas className="text-xs text-ink-soft">Have an invite? <a href="/signup" className="font-medium text-primary underline underline-offset-2">Join your team →</a> <span className="text-ink-muted">·</span> <a href="/register" className="font-medium text-primary underline underline-offset-2">Register business</a></p>
 
           {/* Proof strip — real platform-scale figures, not marketing rounding. */}
           <dl

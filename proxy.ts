@@ -55,8 +55,8 @@ export function proxy(request: NextRequest) {
   }
 
   // Signed-in users don't belong on auth pages.
-  if (["/login", "/signup", "/forgot-password"].includes(pathname)) {
-    if (signedIn(request)) {
+  if (["/login", "/signup", "/register", "/forgot-password", "/register-business", "/verify-email"].includes(pathname)) {
+    if (signedIn(request) && pathname !== "/verify-email") {
       const role = roleFrom(request) ?? "analyst";
       return NextResponse.redirect(new URL(`/${role}/dashboard`, request.url));
     }
@@ -71,6 +71,9 @@ export const config = {
     "/:role/dashboard/:path*",
     "/login/:path*",
     "/signup/:path*",
+    "/register/:path*",
     "/forgot-password/:path*",
+    "/register-business/:path*",
+    "/verify-email/:path*",
   ],
 };

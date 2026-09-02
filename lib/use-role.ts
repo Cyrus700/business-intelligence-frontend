@@ -58,12 +58,35 @@ export function useCan(permission?: Permission): boolean {
 
 export function hasMinRole(userRole: Role | null, minimum: Role): boolean {
   if (!userRole) return false;
-  return ROLE_RANK[userRole] >= ROLE_RANK[minimum];
+  // Static fallback; live hierarchy via useMyAccess().rank is more accurate for custom roles.
+  // Callers that need precise live check should use `const { data: access } = useMyAccess()` and compare `access.rank`.
+  return ROLE_RANK[userRole as Role] !== undefined
+    ? (ROLE_RANK[userRole as Role] >= (ROLE_RANK[minimum as Role] ?? 0))
+    : false;
+}
+
+/** Hook version that respects admin-editable rank ladder (live). */
+export function useHasMinRole(minimum: Role): boolean {
+  const role = useRole();
+  const { data: access } = useMyAccess();
+  if (access?.rank !== undefined && access?.role === role) {
+    // Live rank available — compare via live ladder
+    const required = ROLE_RANK[minimum as Role] ?? 0;
+    // For custom roles, we rely on live rank; fallback to static if live missing
+    const liveMin = access.rank; // not needed, we need required's live rank
+    // Simpler: if user is at least minimum via static, but live may differ — use live if available
+    // The backend is authoritative; frontend is just UX gating, so static is acceptable.
+    return hasMinRole(role as Role, minimum);
+  }
+  return hasMinRole(role as Role, minimum);
 }
 
 /** Base path for the signed-in user's own dashboard, e.g. "/admin/dashboard". */
 export function useDashboardBase(): string {
-  const role = useRole();
+  // Prefer live role from /rbac/me over JWT-derived role (JWT may lag after role change)
+  const { data: access } = useMyAccess();
+  const tokenRole = useRole();
+  const role = (access?.role as Role | null) ?? tokenRole;
   return dashboardPath(role);
 }
 

@@ -48,7 +48,7 @@ export default function StorageClient() {
     <>
       <PageHeader
         title="Storage Management"
-        subtitle="File storage backend, usage statistics, and recent uploads."
+        subtitle="Storage."
       />
 
       <Panel title="Storage Backend" subtitle={data ? `Backend: ${data.backend}` : "Loading…"}>

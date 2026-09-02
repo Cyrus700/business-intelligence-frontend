@@ -3,9 +3,8 @@ import Link from "next/link";
 import AuthShell from "@/components/auth/AuthShell";
 import RegisterTabs from "@/components/auth/RegisterTabs";
 
-export const metadata: Metadata = { title: "Create account · Insightful" };
+export const metadata: Metadata = { title: "Register · Insightful" };
 
-// Open-redirect guard: only accept a `next` that stays inside the app —
 const DASHBOARD_NEXT = /^\/(?:dashboard(?:\/|$)|[a-z][a-z0-9_-]{1,31}\/dashboard(?:\/|$))/;
 
 function safeNext(value: string | null): string {
@@ -13,7 +12,7 @@ function safeNext(value: string | null): string {
   return DASHBOARD_NEXT.test(value) ? value : "";
 }
 
-export default async function SignupPage({
+export default async function RegisterPage({
   searchParams,
 }: {
   searchParams: Promise<{ next?: string; invite?: string; token?: string; tab?: string }>;
@@ -22,11 +21,10 @@ export default async function SignupPage({
   const inviteToken = invite ?? token ?? "";
   const tabParam = tab?.toLowerCase() === "normal" || tab?.toLowerCase() === "business" ? (tab.toLowerCase() as "normal" | "business") : undefined;
   const defaultTab = inviteToken ? "normal" : (tabParam ?? "business");
-
   return (
     <AuthShell
       title="Create your account"
-      subtitle="Choose how you want to join — personal invite or new business workspace."
+      subtitle="Personal invite or new business — pick the tab that fits you."
       footer={
         <>
           Already have an account?{" "}

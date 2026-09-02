@@ -170,7 +170,7 @@ export default function WhatIfClient() {
     <>
       <PageHeader
         title="What-If Simulation"
-        subtitle="Power BI-style parameter simulation — BASELINE vs SCENARIO with transparent deltas. Simulated values are not actual business data."
+        subtitle="Simulation."
         action={
           <div className="flex gap-2">
             <button

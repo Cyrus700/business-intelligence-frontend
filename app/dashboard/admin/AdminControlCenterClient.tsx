@@ -9,6 +9,8 @@ import Panel from "@/components/dashboard/Panel";
 import Badge from "@/components/ui/Badge";
 import Icon from "@/components/ui/Icon";
 import { clsx } from "@/lib/cx";
+import PendingApprovals from "@/components/dashboard/PendingApprovals";
+import { useAuth } from "@/lib/auth-context";
 
 type AdminSection = {
   id: string;
@@ -99,6 +101,8 @@ const ADMIN_SECTIONS: AdminSection[] = [
 ];
 
 export default function AdminControlCenterClient() {
+  const { user } = useAuth();
+  const isSuper = !!user?.is_super_admin;
   const { data: health } = useQuery<SystemHealthOut>({
     queryKey: ["health", "system"],
     queryFn: () => apiGet<SystemHealthOut>("/health/system"),
@@ -118,7 +122,7 @@ export default function AdminControlCenterClient() {
     <>
       <PageHeader
         title="Admin Control Center"
-        subtitle="Unified platform administration: users, data, ML, AI, security, and observability."
+        subtitle="Admin."
         action={
           <div className="flex items-center gap-2">
             <Badge variant={statusColor} className="text-xs">
@@ -132,6 +136,12 @@ export default function AdminControlCenterClient() {
           </div>
         }
       />
+
+      {isSuper && (
+        <div className="mb-6">
+          <PendingApprovals />
+        </div>
+      )}
 
       {/* Platform Health Overview */}
       <Panel title="Platform Health" subtitle={health ? `Generated ${new Date(health.generated_at).toLocaleTimeString()}` : "Loading…"}>

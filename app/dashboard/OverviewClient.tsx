@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import PageHeader from "@/components/dashboard/PageHeader";
 import Icon from "@/components/ui/Icon";
 import Greeting from "@/components/dashboard/Greeting";
@@ -17,38 +18,55 @@ import RoleOverview from "@/components/dashboard/role/RoleOverview";
 import DataFreshness from "@/components/dashboard/live/DataFreshness";
 import { RangePicker } from "@/lib/filters";
 import { useDashboardBase } from "@/lib/use-role";
+import { useAuth } from "@/lib/auth-context";
+import { apiGet, useApi } from "@/lib/api";
+
+function BusinessEmptyState({ businessName }: { businessName: string | null }) {
+  const base = useDashboardBase();
+  const { data: coverage } = useApi<{ sales: { row_count: number }; expenses: { row_count: number } }>("/data-coverage", undefined, ["coverage", "empty-check"] as any);
+  const hasData = (coverage as any)?.sales?.row_count > 0 || (coverage as any)?.expenses?.row_count > 0;
+  if (hasData || !coverage) return null;
+  return (
+    <div className="mb-6 rounded-xl border border-border bg-white p-4">
+      <h3 className="text-sm font-medium text-ink">No data yet</h3>
+      <p className="mt-1 text-sm text-ink-soft">Upload a CSV to see your dashboard.</p>
+      <a href={`${base}/data`} className="mt-3 inline-flex rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white">Upload data</a>
+    </div>
+  );
+}
 
 export default function OverviewClient() {
   const base = useDashboardBase();
+  const { user } = useAuth();
+  const { data: orgs } = useQuery<{ id: string; name: string }[]>({
+    queryKey: ["orgs-overview", user?.id],
+    queryFn: () => apiGet("/auth/organizations"),
+    enabled: !!user,
+  });
+  const businessName = orgs?.[0]?.name ?? null;
+  const isSuper = !!user?.is_super_admin;
+  const roleLabel = user?.role === "admin" ? (isSuper ? "Platform Super-Admin" : "Business Admin") : user?.role === "manager" ? "Manager" : "Analyst";
   return (
     <>
-      <PageHeader title="Overview" subtitle="" action={<RangePicker />} />
-      <p className="-mt-4 mb-4 text-sm text-ink-soft">
+      <PageHeader
+        title={businessName ?? "Overview"}
+        subtitle={businessName ? `${businessName}` : "Overview"}
+        action={<RangePicker />}
+      />
+      <p className="-mt-2 mb-4 text-sm text-ink-soft">
         <Greeting />
       </p>
 
       <DataFreshness className="mb-6" />
+
+      {/* Onboarding for brand-new business with no data */}
+      <BusinessEmptyState businessName={businessName} />
 
       <KpiRow />
 
       <RoleOverview>
         {(role) => (
           <>
-            {role === "admin" && (
-              <div className="mb-4 flex flex-wrap items-center gap-x-1 gap-y-1 rounded-2xl border border-primary/20 bg-primary/5 p-4">
-                <Icon name="shield" className="mr-2 mt-0.5 h-5 w-5 shrink-0 text-primary" />
-                <p className="text-sm font-medium text-primary">
-                  Admin view — you have full platform access.
-                  <a href={`${base}/users`} className="ml-2 underline hover:no-underline">
-                    Manage users
-                  </a>
-                  <span className="mx-2 text-primary/30">·</span>
-                  <a href={`${base}/permissions`} className="underline hover:no-underline">
-                    View permissions
-                  </a>
-                </p>
-              </div>
-            )}
 
             <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
               <Panel

@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
+  compress: true,
+  poweredByHeader: false,
   // Role-prefixed dashboard URLs (/admin/dashboard/*, /manager/dashboard/*,
   // /<custom-role>/dashboard/*) are served transparently from the existing
   // /dashboard/* page tree — the browser URL keeps the role prefix, but no

@@ -59,7 +59,11 @@ export function getToken(): string | null {
   if (typeof window === "undefined") return null;
   const stored = window.localStorage.getItem(TOKEN_KEY);
   if (stored) return stored;
-  return process.env.NEXT_PUBLIC_DEV_API_TOKEN ?? null;
+  // Dev fallback must NOT leak into production — only when NODE_ENV !== 'production'
+  if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
+    return process.env.NEXT_PUBLIC_DEV_API_TOKEN ?? null;
+  }
+  return null;
 }
 
 export function clearToken() {
@@ -75,8 +79,19 @@ export function clearAll() {
 
 export function decodeTokenPayload(token: string): Record<string, unknown> | null {
   try {
-    const base64 = token.split(".")[1];
-    return JSON.parse(atob(base64));
+    const base64Url = token.split(".")[1];
+    // JWT uses base64url (-/_) without padding; atob expects standard base64 with padding
+    let base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const pad = base64.length % 4;
+    if (pad) base64 += "=".repeat(4 - pad);
+    const json = atob(base64);
+    // Handle UTF-8 (atob returns binary string)
+    try {
+      // Decode as UTF-8 via escape sequence (works for JSON payloads which are ASCII mostly)
+      return JSON.parse(decodeURIComponent(escape(json)));
+    } catch {
+      return JSON.parse(json);
+    }
   } catch {
     return null;
   }
@@ -145,10 +160,19 @@ export function sessionFromToken(token: string): Session | null {
 // ── Real API auth functions ──────────────────────────────────────────
 
 export type LoginBody = { email: string; password: string };
-export type SignupBody = { email: string; password: string; full_name?: string | null };
+export type SignupBody = { email: string; password: string; full_name?: string | null; invite_token?: string | null };
 export type AuthResult = {
   token: string;
   user: UserProfile;
+};
+
+export type RegisterOrgBody = { org_name: string; email: string; password: string; full_name?: string | null };
+export type RegisterOrgResult = {
+  token: string | null;
+  user: UserProfile | null;
+  organization: { id: string; name: string; status?: string };
+  status: string;
+  message?: string | null;
 };
 
 export async function login(body: LoginBody): Promise<AuthResult> {
@@ -163,6 +187,48 @@ export async function signup(body: SignupBody): Promise<AuthResult> {
   setToken(res.token);
   setSession({ email: res.user.email, name: res.user.full_name ?? nameFromEmail(res.user.email) });
   return res;
+}
+
+export async function registerOrg(body: RegisterOrgBody): Promise<RegisterOrgResult> {
+  const res = await apiPost<RegisterOrgResult>("/auth/register-org", body);
+  // Only set session if approved (token present)
+  if (res.token && res.user) {
+    setToken(res.token);
+    setSession({ email: res.user.email, name: res.user.full_name ?? nameFromEmail(res.user.email) });
+  }
+  return res;
+}
+
+export async function verifyEmail(token: string): Promise<{ message: string }> {
+  return apiPost<{ message: string }>("/auth/verify-email", { token });
+}
+
+export async function resendVerification(email: string): Promise<{ message: string }> {
+  return apiPost<{ message: string }>("/auth/resend-verification", { email });
+}
+
+export async function getPendingOrganizations(): Promise<{ id: string; name: string; slug: string | null; status: string; created_at: string }[]> {
+  return apiGet<{ id: string; name: string; slug: string | null; status: string; created_at: string }[]>("/auth/admin/pending-organizations");
+}
+
+export async function approveOrganization(orgId: string): Promise<{ id: string; name: string; status: string }> {
+  return apiPost<{ id: string; name: string; status: string }>(`/auth/admin/organizations/${orgId}/approve`, {});
+}
+
+export async function rejectOrganization(orgId: string, reason?: string): Promise<{ id: string; name: string; status: string }> {
+  return apiPost<{ id: string; name: string; status: string }>(`/auth/admin/organizations/${orgId}/reject`, { reason });
+}
+
+export async function createInvite(email: string, role: string): Promise<unknown> {
+  return apiPost("/auth/invite", { email, role });
+}
+
+export async function getInvites(): Promise<unknown[]> {
+  return apiGet<unknown[]>("/auth/invites");
+}
+
+export async function getOrganizations(): Promise<{ id: string; name: string }[]> {
+  return apiGet<{ id: string; name: string }[]>("/auth/organizations");
 }
 
 export async function forgotPassword(email: string): Promise<void> {

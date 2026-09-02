@@ -83,7 +83,7 @@ export default function SchedulerClient() {
     <>
       <PageHeader
         title="Scheduler Management"
-        subtitle="Monitor and control APScheduler jobs (retrain, anomaly scan, drift check, insights, reports)."
+        subtitle="Jobs."
         action={
           <button
             onClick={() => {

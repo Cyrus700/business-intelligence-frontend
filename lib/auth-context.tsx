@@ -8,6 +8,7 @@ import {
 import {
   login as apiLogin,
   signup as apiSignup,
+  registerOrg as apiRegisterOrg,
   forgotPassword as apiForgotPassword,
   validateSession,
   updateProfile as apiUpdateProfile,
@@ -19,13 +20,15 @@ import {
   setSession,
   type ProfileUpdate,
   type UserPreferences,
+  type RegisterOrgResult,
 } from "@/lib/auth";
 
 export type AuthState = {
   user: UserProfile | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<UserProfile>;
-  signup: (email: string, password: string, fullName?: string | null) => Promise<UserProfile>;
+  signup: (email: string, password: string, fullName?: string | null, inviteToken?: string | null) => Promise<UserProfile>;
+  registerOrg: (orgName: string, email: string, password: string, fullName?: string | null) => Promise<RegisterOrgResult>;
   forgotPassword: (email: string) => Promise<void>;
   logout: () => void;
   refresh: () => Promise<UserProfile | null>;
@@ -59,10 +62,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return res.user;
   }, []);
 
-  const signup = useCallback(async (email: string, password: string, fullName?: string | null) => {
-    const res = await apiSignup({ email, password, full_name: fullName });
+  const signup = useCallback(async (email: string, password: string, fullName?: string | null, inviteToken?: string | null) => {
+    const res = await apiSignup({ email, password, full_name: fullName, invite_token: inviteToken ?? undefined });
     setUser(res.user);
     return res.user;
+  }, []);
+
+  const registerOrg = useCallback(async (orgName: string, email: string, password: string, fullName?: string | null) => {
+    const res = await apiRegisterOrg({ org_name: orgName, email, password, full_name: fullName });
+    if (res.user) setUser(res.user);
+    return res;
   }, []);
 
   const forgotPassword = useCallback(async (email: string) => {
@@ -83,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <Ctx.Provider value={{ user, loading, login, signup, forgotPassword, logout, refresh, updateProfile: updateProfileFn, getPreferences: apiGetPreferences, updatePreferences: apiUpdatePreferences }}>
+    <Ctx.Provider value={{ user, loading, login, signup, registerOrg, forgotPassword, logout, refresh, updateProfile: updateProfileFn, getPreferences: apiGetPreferences, updatePreferences: apiUpdatePreferences }}>
       {children}
     </Ctx.Provider>
   );

@@ -2,11 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { clsx } from "@/lib/cx";
 import { useAuth } from "@/lib/auth-context";
 import { useRole, useDashboardBase } from "@/lib/use-role";
 import { getRoleInfo, type Role } from "@/lib/permissions";
 import Icon from "@/components/ui/Icon";
+import OrgSwitcher from "@/components/dashboard/OrgSwitcher";
+import { apiGet } from "@/lib/api";
 
 const ROLE_BADGE: Record<Role, string> = {
   analyst: "bg-green-100 text-green-700",
@@ -42,6 +45,13 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
   const email = user?.email ?? "";
   const initial = name?.charAt(0)?.toUpperCase() ?? "U";
   const roleInfo = getRoleInfo(role);
+  const { data: orgs } = useQuery<{ id: string; name: string }[]>({
+    queryKey: ["orgs-topbar", user?.id],
+    queryFn: () => apiGet("/auth/organizations"),
+    enabled: !!user,
+  });
+  const businessName = orgs?.[0]?.name ?? null;
+  const isSuper = !!user?.is_super_admin;
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-white/80 px-4 backdrop-blur-xl sm:px-6">
@@ -68,6 +78,13 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
       </div>
 
       <div className="ml-auto flex items-center gap-2 sm:gap-3">
+        {businessName && !isSuper && (
+          <span className="hidden items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary md:inline-flex">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+            {businessName}
+          </span>
+        )}
+        <OrgSwitcher />
         {role && (
           <span
             className={clsx(
