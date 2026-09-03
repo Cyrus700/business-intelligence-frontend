@@ -157,6 +157,22 @@ export default function Hero({
         },
       });
 
+      // Safety fallback: if the timeline is interrupted (fast navigation,
+      // StrictMode double-mount, or a ScrollTrigger error) the hero must
+      // remain readable. Force every above-the-fold element visible after
+      // the choreography should have finished. Cheap, idempotent.
+      const heroFallback = window.setTimeout(() => {
+        gsap.set(q("[data-line]"), { yPercent: 0, opacity: 1, clearProps: "transform" });
+        gsap.set(q("[data-eyebrow], [data-hero-sub], [data-hero-ctas], [data-proof], [data-proof] > *, [data-mock], [data-panel-row], [data-dim-bar]"), {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          scaleX: 1,
+          clearProps: "transform,opacity",
+        });
+      }, 1700);
+      cleanups.push(() => window.clearTimeout(heroFallback));
+
       // Interaction polish.
       q("[data-magnetic]").forEach((el) =>
         cleanups.push(magnetic(el as HTMLElement, 0.22)),
@@ -173,7 +189,7 @@ export default function Hero({
   return (
     <section
       ref={root}
-      className="relative overflow-hidden pt-28 pb-12 sm:pt-32 sm:pb-16 lg:pt-36 lg:pb-24 xl:pb-28 isolate"
+      className="relative overflow-hidden pt-20 pb-8 sm:pt-28 sm:pb-12 lg:pt-36 lg:pb-24 xl:pb-28 isolate"
     >
       {/* Layered background: wash → aurora → grid. */}
       <div className="hero-wash pointer-events-none absolute inset-0 -z-30" />
@@ -193,7 +209,7 @@ export default function Hero({
       </div>
       <div className="grid-lines pointer-events-none absolute inset-0 -z-10 opacity-60 sm:opacity-100" aria-hidden />
 
-      <div className="container-page grid items-start lg:items-center gap-8 sm:gap-10 lg:gap-12 xl:gap-14 lg:grid-cols-[1.05fr_0.95fr]">
+      <div className="container-page grid items-start lg:items-center gap-6 sm:gap-8 lg:gap-12 xl:gap-14 lg:grid-cols-[1.05fr_0.95fr]">
         <div data-hero-copy className="flex w-full min-w-0 flex-col items-stretch sm:items-start gap-5 sm:gap-6">
           <span
             data-eyebrow
