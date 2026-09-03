@@ -40,7 +40,16 @@ export default function HowItWorks({ live }: { live: PlatformSnapshot | null }) 
       if (!el) return;
       const q = gsap.utils.selector(root);
 
-      if (prefersReducedMotion()) return;
+      if (prefersReducedMotion()) {
+        gsap.set(q("[data-step-card], [data-step-badge], [data-steps-fill]"), {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          xPercent: 0,
+          clearProps: "transform,opacity",
+        });
+        return;
+      }
 
       // Connecting progress line scrubs with scroll.
       const fill = q("[data-steps-fill]")[0];
@@ -79,6 +88,17 @@ export default function HowItWorks({ live }: { live: PlatformSnapshot | null }) 
         delay: 0.15,
         scrollTrigger: revealTrigger(el),
       });
+
+      const fallback = window.setTimeout(() => {
+        gsap.set(q("[data-step-card], [data-step-badge]"), {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          clearProps: "transform,opacity",
+        });
+        if (fill) gsap.set(fill, { xPercent: 0 });
+      }, 1900);
+      return () => window.clearTimeout(fallback);
     },
     { scope: root, dependencies: [steps.length] },
   );

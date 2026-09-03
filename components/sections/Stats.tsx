@@ -67,8 +67,9 @@ export default function Stats({
       const reduce = prefersReducedMotion();
 
       const items = gsap.utils.toArray<HTMLElement>("[data-stat]", band);
+      let fallback: number | undefined;
       if (reduce) {
-        gsap.set(items, { opacity: 1, y: 0 });
+        gsap.set(items, { opacity: 1, y: 0, clearProps: "transform,opacity" });
       } else {
         gsap.from(items, {
           y: 26,
@@ -78,6 +79,9 @@ export default function Stats({
           stagger: 0.09,
           scrollTrigger: revealTrigger(band),
         });
+        fallback = window.setTimeout(() => {
+          gsap.set(items, { opacity: 1, y: 0, clearProps: "transform,opacity" });
+        }, 1800) as unknown as number;
       }
 
       gsap.utils.toArray<HTMLElement>("[data-counter]", band).forEach((node) => {

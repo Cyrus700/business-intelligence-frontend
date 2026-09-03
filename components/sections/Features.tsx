@@ -29,7 +29,7 @@ export default function Features() {
       const cleanups: Array<() => void> = [];
 
       if (prefersReducedMotion()) {
-        gsap.set(cards, { opacity: 1, y: 0, scale: 1 });
+        gsap.set(cards, { opacity: 1, y: 0, scale: 1, clearProps: "transform,opacity" });
         return;
       }
 
@@ -44,6 +44,15 @@ export default function Features() {
         stagger: { each: 0.08, grid: "auto", from: "start" },
         scrollTrigger: { trigger: el, start: "top 80%", once: true },
       });
+
+      // Phone fallback: if ScrollTrigger never fires (e.g. element already
+      // in viewport, reduced-motion calc fails, or user scrolls past), force
+      // visible after the stagger should have finished. Fixes the white-space
+      // where 4/6 cards stay at opacity:0.
+      const fallback = window.setTimeout(() => {
+        gsap.set(cards, { opacity: 1, y: 0, scale: 1, clearProps: "transform,opacity" });
+      }, 1800);
+      cleanups.push(() => window.clearTimeout(fallback));
 
       cards.forEach((card) => cleanups.push(pointerSpotlight(card)));
       return () => cleanups.forEach((fn) => fn());

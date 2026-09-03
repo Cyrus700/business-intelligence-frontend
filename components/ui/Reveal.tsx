@@ -26,7 +26,11 @@ export default function Reveal({
   useGSAP(
     () => {
       const el = ref.current;
-      if (!el || prefersReducedMotion()) return;
+      if (!el) return;
+      if (prefersReducedMotion()) {
+        gsap.set(el, { opacity: 1, y: 0, scale: 1, clearProps: "transform,opacity" });
+        return;
+      }
       const from: gsap.TweenVars = { y, opacity: 0 };
       const to: gsap.TweenVars = {
         y: 0,
@@ -41,6 +45,13 @@ export default function Reveal({
         to.scale = 1;
       }
       gsap.fromTo(el, from, to);
+
+      // Phone fallback: ScrollTrigger with `once:true` can miss if the
+      // element is already in viewport on mount or if JS is throttled.
+      const fallback = window.setTimeout(() => {
+        gsap.set(el, { opacity: 1, y: 0, scale: 1, clearProps: "transform,opacity" });
+      }, 1800 + delay * 1000);
+      return () => window.clearTimeout(fallback);
     },
     { scope: ref },
   );

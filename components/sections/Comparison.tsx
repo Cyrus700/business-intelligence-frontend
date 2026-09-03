@@ -17,8 +17,17 @@ export default function Comparison() {
   useGSAP(
     () => {
       const el = root.current;
-      if (!el || prefersReducedMotion()) return;
+      if (!el) return;
       const q = gsap.utils.selector(root);
+      if (prefersReducedMotion()) {
+        gsap.set(q("[data-head-row], [data-row], [data-check]"), {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          clearProps: "transform,opacity",
+        });
+        return;
+      }
 
       // Header row, then body rows cascade in.
       gsap.from(q("[data-head-row]"), {
@@ -48,6 +57,16 @@ export default function Comparison() {
         delay: 0.5,
         scrollTrigger: revealTrigger(el),
       });
+
+      const fallback = window.setTimeout(() => {
+        gsap.set(q("[data-head-row], [data-row], [data-check]"), {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          clearProps: "transform,opacity",
+        });
+      }, 1900);
+      return () => window.clearTimeout(fallback);
     },
     { scope: root },
   );

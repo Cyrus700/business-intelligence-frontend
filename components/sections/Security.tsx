@@ -16,8 +16,16 @@ export default function Security() {
   useGSAP(
     () => {
       const el = root.current;
-      if (!el || prefersReducedMotion()) return;
+      if (!el) return;
       const q = gsap.utils.selector(root);
+      if (prefersReducedMotion()) {
+        gsap.set(q("[data-badge], [data-sec-icon]"), {
+          opacity: 1,
+          scale: 1,
+          clearProps: "transform,opacity",
+        });
+        return;
+      }
 
       // Protocol chips pop in with a crisp, trustworthy bounce.
       gsap.from(q("[data-badge]"), {
@@ -39,6 +47,15 @@ export default function Security() {
         delay: 0.15,
         scrollTrigger: revealTrigger(el),
       });
+
+      const fallback = window.setTimeout(() => {
+        gsap.set(q("[data-badge], [data-sec-icon]"), {
+          opacity: 1,
+          scale: 1,
+          clearProps: "transform,opacity",
+        });
+      }, 1800);
+      return () => window.clearTimeout(fallback);
     },
     { scope: root },
   );

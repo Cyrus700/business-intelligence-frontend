@@ -27,11 +27,29 @@ export default function GsapProvider({
       getMotionOverride() === "on" ? "force" : "auto";
 
     // Failsafe: ensure reveal content becomes visible even if ScrollTrigger stalls
-    // (slow network, handler error, etc.). GSAP will already have animated them
-    // before this fires in normal operation; this just unblocks invisibility.
+    // (slow network, handler error, phone where trigger calc fails, etc.).
+    // GSAP will already have animated them before this fires; this just
+    // unblocks invisibility. Covers both [data-reveal] (SectionHeading etc.)
+    // and direct gsap.from targets like [data-feature], [data-step-card]…
     const revealTimer = window.setTimeout(() => {
       document.documentElement.classList.add("reveal-ready");
     }, 1200);
+    const forceVisibleTimer = window.setTimeout(() => {
+      // Inline styles from gsap.from({opacity:0,y:34}) win over the
+      // .reveal-ready CSS rule, so we must clear them via gsap.set.
+      const landingSelectors =
+        "[data-reveal], [data-feature], [data-step-card], [data-step-badge], [data-row], [data-head-row], [data-check], [data-badge], [data-sec-icon], [data-stat], [data-counter], [data-panel-row], [data-dim-bar]";
+      gsap.set(landingSelectors, {
+        opacity: 1,
+        y: 0,
+        x: 0,
+        yPercent: 0,
+        scale: 1,
+        scaleX: 1,
+        clearProps: "transform,opacity",
+      });
+      document.documentElement.classList.add("reveal-ready");
+    }, 1800);
     const onFirstScroll = () => {
       document.documentElement.classList.add("reveal-ready");
     };
@@ -44,6 +62,7 @@ export default function GsapProvider({
     return () => {
       window.clearTimeout(id);
       window.clearTimeout(revealTimer);
+      window.clearTimeout(forceVisibleTimer);
       window.removeEventListener("load", refresh);
       window.removeEventListener("scroll", onFirstScroll);
     };
