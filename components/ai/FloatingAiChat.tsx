@@ -73,7 +73,7 @@ export default function FloatingAiChat() {
             <Icon name="spark" className="h-5 w-5" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold leading-tight text-ink">Insightful AI</p>
+            <p className="text-sm font-semibold leading-tight text-ink">InsightFlow AI</p>
             <p className="flex items-center gap-1.5 text-[11px] leading-tight text-ink-muted">
               <span className="h-1.5 w-1.5 rounded-full bg-accent" />
               {streaming ? "Generating…" : "Online · answers from your data"}

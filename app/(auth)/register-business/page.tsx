@@ -3,7 +3,7 @@ import Link from "next/link";
 import AuthShell from "@/components/auth/AuthShell";
 import RegisterBusinessForm from "@/components/auth/RegisterBusinessForm";
 
-export const metadata: Metadata = { title: "Register your business · Insightful" };
+export const metadata: Metadata = { title: "Register your business · InsightFlow" };
 
 export default function RegisterBusinessPage() {
   return (

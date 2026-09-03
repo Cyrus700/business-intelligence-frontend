@@ -4,8 +4,10 @@ import { useMemo, useSyncExternalStore } from "react";
 import { apiPost, apiGet, apiPatch } from "@/lib/api";
 import type { UserProfile } from "@/lib/api";
 
-const SESSION_KEY = "insightful.session";
-const TOKEN_KEY = "insightful.token";
+const SESSION_KEY = "insightflow.session";
+const TOKEN_KEY = "insightflow.token";
+const LEGACY_SESSION_KEY = "insightful.session";
+const LEGACY_TOKEN_KEY = "insightful.token";
 
 // Presence cookie for the server-side route gate (proxy.ts). The JWT itself
 // stays in localStorage; the proxy only needs a cheap "is someone signed in"
@@ -13,8 +15,10 @@ const TOKEN_KEY = "insightful.token";
 // alongside it so the proxy can also route /<role>/dashboard/* without
 // decoding the JWT at the edge — it's routing UX only, never an authority
 // boundary (the API re-checks the real JWT role on every request).
-const AUTH_COOKIE = "insightful.auth";
-const ROLE_COOKIE = "insightful.role";
+const AUTH_COOKIE = "insightflow.auth";
+const ROLE_COOKIE = "insightflow.role";
+const LEGACY_AUTH_COOKIE = "insightful.auth";
+const LEGACY_ROLE_COOKIE = "insightful.role";
 const AUTH_COOKIE_MAX_AGE = 60 * 60 * 12;
 
 export type Session = { name: string; email: string };
@@ -33,12 +37,17 @@ function setAuthCookie(token: string) {
   document.cookie = role
     ? `${ROLE_COOKIE}=${role}; path=/; max-age=${AUTH_COOKIE_MAX_AGE}; samesite=lax`
     : `${ROLE_COOKIE}=; path=/; max-age=0; samesite=lax`;
+  // Clear legacy cookies once migrated
+  document.cookie = `${LEGACY_AUTH_COOKIE}=; path=/; max-age=0; samesite=lax`;
+  document.cookie = `${LEGACY_ROLE_COOKIE}=; path=/; max-age=0; samesite=lax`;
 }
 
 function clearAuthCookie() {
   if (typeof document === "undefined") return;
   document.cookie = `${AUTH_COOKIE}=; path=/; max-age=0; samesite=lax`;
   document.cookie = `${ROLE_COOKIE}=; path=/; max-age=0; samesite=lax`;
+  document.cookie = `${LEGACY_AUTH_COOKIE}=; path=/; max-age=0; samesite=lax`;
+  document.cookie = `${LEGACY_ROLE_COOKIE}=; path=/; max-age=0; samesite=lax`;
 }
 
 /** Reflects the current token into the auth cookie. Safe to call repeatedly. */
@@ -52,13 +61,22 @@ export function syncSessionCookie() {
 export function setToken(token: string) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(TOKEN_KEY, token);
+  // Migrate: remove legacy key if present
+  window.localStorage.removeItem(LEGACY_TOKEN_KEY);
   setAuthCookie(token);
 }
 
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
-  const stored = window.localStorage.getItem(TOKEN_KEY);
-  if (stored) return stored;
+  const stored = window.localStorage.getItem(TOKEN_KEY) ?? window.localStorage.getItem(LEGACY_TOKEN_KEY);
+  if (stored) {
+    // Transparently migrate legacy key to new
+    if (!window.localStorage.getItem(TOKEN_KEY) && window.localStorage.getItem(LEGACY_TOKEN_KEY)) {
+      window.localStorage.setItem(TOKEN_KEY, stored);
+      window.localStorage.removeItem(LEGACY_TOKEN_KEY);
+    }
+    return stored;
+  }
   // Dev fallback must NOT leak into production — only when NODE_ENV !== 'production'
   if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
     return process.env.NEXT_PUBLIC_DEV_API_TOKEN ?? null;
@@ -69,6 +87,7 @@ export function getToken(): string | null {
 export function clearToken() {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(TOKEN_KEY);
+  window.localStorage.removeItem(LEGACY_TOKEN_KEY);
   clearAuthCookie();
 }
 
@@ -100,12 +119,17 @@ export function decodeTokenPayload(token: string): Record<string, unknown> | nul
 export function setSession(session: Session) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  window.localStorage.removeItem(LEGACY_SESSION_KEY);
 }
 
 export function getSession(): Session | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = window.localStorage.getItem(SESSION_KEY);
+    const raw = window.localStorage.getItem(SESSION_KEY) ?? window.localStorage.getItem(LEGACY_SESSION_KEY);
+    if (raw && !window.localStorage.getItem(SESSION_KEY) && window.localStorage.getItem(LEGACY_SESSION_KEY)) {
+      window.localStorage.setItem(SESSION_KEY, raw);
+      window.localStorage.removeItem(LEGACY_SESSION_KEY);
+    }
     return raw ? (JSON.parse(raw) as Session) : null;
   } catch {
     return null;
@@ -115,6 +139,7 @@ export function getSession(): Session | null {
 export function clearSession() {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(SESSION_KEY);
+  window.localStorage.removeItem(LEGACY_SESSION_KEY);
 }
 
 export function nameFromEmail(email: string) {

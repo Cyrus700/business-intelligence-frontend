@@ -246,7 +246,7 @@ export default function AIClient() {
         subtitle={
           mode === "analyze"
             ? "Ask questions about your business data"
-            : "Chat with Insightful AI — your BI co-pilot"
+            : "Chat with InsightFlow AI — your BI co-pilot"
         }
         action={
           <div className="flex items-center gap-2">

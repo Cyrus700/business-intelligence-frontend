@@ -46,14 +46,16 @@ export const revealTrigger = (el: Element) => ({
 //   ?motion=on    force animations on in this browser (persists)
 //   ?motion=auto  go back to following the OS setting
 
-export const MOTION_OVERRIDE_KEY = "insightful:motion";
+export const MOTION_OVERRIDE_KEY = "insightflow:motion";
+const LEGACY_MOTION_OVERRIDE_KEY = "insightful:motion";
 
 export type MotionOverride = "on" | "auto";
 
 export function getMotionOverride(): MotionOverride {
   if (typeof window === "undefined") return "auto";
   try {
-    return window.localStorage.getItem(MOTION_OVERRIDE_KEY) === "on" ? "on" : "auto";
+    const v = window.localStorage.getItem(MOTION_OVERRIDE_KEY) ?? window.localStorage.getItem(LEGACY_MOTION_OVERRIDE_KEY);
+    return v === "on" ? "on" : "auto";
   } catch {
     return "auto"; // private mode / storage disabled
   }
@@ -62,8 +64,13 @@ export function getMotionOverride(): MotionOverride {
 export function setMotionOverride(value: MotionOverride): void {
   if (typeof window === "undefined") return;
   try {
-    if (value === "on") window.localStorage.setItem(MOTION_OVERRIDE_KEY, "on");
-    else window.localStorage.removeItem(MOTION_OVERRIDE_KEY);
+    if (value === "on") {
+      window.localStorage.setItem(MOTION_OVERRIDE_KEY, "on");
+      window.localStorage.removeItem(LEGACY_MOTION_OVERRIDE_KEY);
+    } else {
+      window.localStorage.removeItem(MOTION_OVERRIDE_KEY);
+      window.localStorage.removeItem(LEGACY_MOTION_OVERRIDE_KEY);
+    }
   } catch {
     /* storage unavailable — the override simply won't persist */
   }

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import AuditClient from "./AuditClient";
 import RequireAccess from "@/components/dashboard/RequireAccess";
 
-export const metadata: Metadata = { title: "Audit Logs · Insightful" };
+export const metadata: Metadata = { title: "Audit Logs · InsightFlow" };
 
 export default function AuditPage() {
   return (

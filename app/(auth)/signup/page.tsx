@@ -3,7 +3,7 @@ import Link from "next/link";
 import AuthShell from "@/components/auth/AuthShell";
 import RegisterTabs from "@/components/auth/RegisterTabs";
 
-export const metadata: Metadata = { title: "Create account · Insightful" };
+export const metadata: Metadata = { title: "Create account · InsightFlow" };
 
 // Open-redirect guard: only accept a `next` that stays inside the app —
 const DASHBOARD_NEXT = /^\/(?:dashboard(?:\/|$)|[a-z][a-z0-9_-]{1,31}\/dashboard(?:\/|$))/;

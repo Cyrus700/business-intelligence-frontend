@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const AUTH_COOKIE = "insightful.auth";
-const ROLE_COOKIE = "insightful.role";
+const AUTH_COOKIE = "insightflow.auth";
+const ROLE_COOKIE = "insightflow.role";
+const LEGACY_AUTH_COOKIE = "insightful.auth";
+const LEGACY_ROLE_COOKIE = "insightful.role";
 
 // Mirrors lib/permissions.ts's ROLE_SLUG_PATTERN (and the server-side
 // constraint on the `roles` table) — admins can define custom roles at
@@ -10,11 +12,11 @@ const ROLE_COOKIE = "insightful.role";
 const ROLE_SLUG = /^[a-z][a-z0-9_-]{1,31}$/;
 
 function signedIn(request: NextRequest): boolean {
-  return request.cookies.has(AUTH_COOKIE);
+  return request.cookies.has(AUTH_COOKIE) || request.cookies.has(LEGACY_AUTH_COOKIE);
 }
 
 function roleFrom(request: NextRequest): string | null {
-  const value = request.cookies.get(ROLE_COOKIE)?.value;
+  const value = request.cookies.get(ROLE_COOKIE)?.value ?? request.cookies.get(LEGACY_ROLE_COOKIE)?.value;
   return value && ROLE_SLUG.test(value) ? value : null;
 }
 

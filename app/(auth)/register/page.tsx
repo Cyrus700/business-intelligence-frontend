@@ -3,7 +3,7 @@ import Link from "next/link";
 import AuthShell from "@/components/auth/AuthShell";
 import RegisterTabs from "@/components/auth/RegisterTabs";
 
-export const metadata: Metadata = { title: "Register · Insightful" };
+export const metadata: Metadata = { title: "Register · InsightFlow" };
 
 const DASHBOARD_NEXT = /^\/(?:dashboard(?:\/|$)|[a-z][a-z0-9_-]{1,31}\/dashboard(?:\/|$))/;
 

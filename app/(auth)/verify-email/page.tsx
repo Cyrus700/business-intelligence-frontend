@@ -3,7 +3,7 @@ import Link from "next/link";
 import AuthShell from "@/components/auth/AuthShell";
 import VerifyEmailClient from "@/components/auth/VerifyEmailClient";
 
-export const metadata: Metadata = { title: "Verify email · Insightful" };
+export const metadata: Metadata = { title: "Verify email · InsightFlow" };
 
 export default async function VerifyEmailPage({ searchParams }: { searchParams: Promise<{ token?: string }> }) {
   const { token } = await searchParams;

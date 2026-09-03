@@ -3,7 +3,7 @@ import Link from "next/link";
 import AuthShell from "@/components/auth/AuthShell";
 import LoginForm from "@/components/auth/LoginForm";
 
-export const metadata: Metadata = { title: "Sign in · Insightful" };
+export const metadata: Metadata = { title: "Sign in · InsightFlow" };
 
 // Open-redirect guard: only accept a `next` that stays inside the app —
 // either the legacy bare path or a role-prefixed one (proxy.ts owns turning
@@ -27,7 +27,7 @@ export default async function LoginPage({
   return (
     <AuthShell
       title="Welcome back"
-      subtitle="Sign in to your Insightful dashboard."
+      subtitle="Sign in to your InsightFlow dashboard."
       footer={
         <>
           Don&apos;t have an account?{" "}

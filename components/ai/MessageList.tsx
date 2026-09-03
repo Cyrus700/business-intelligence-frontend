@@ -78,7 +78,7 @@ function EmptyState({ compact, onSuggest }: { compact: boolean; onSuggest: (q: s
         <Icon name="spark" className={compact ? "h-5 w-5" : "h-7 w-7"} />
       </span>
       <h3 className={clsx("mt-3 font-semibold text-ink", compact ? "text-sm" : "text-lg")}>
-        Ask Insightful AI
+        Ask InsightFlow AI
       </h3>
       <p className={clsx("mt-1 max-w-md text-ink-soft", compact ? "text-xs" : "text-sm")}>
         Your BI co-pilot analyses <strong className="font-medium">live dashboard data</strong> — revenue,

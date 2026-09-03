@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import AnalyticsClient from "./AnalyticsClient";
 import RequireAccess from "@/components/dashboard/RequireAccess";
 
-export const metadata: Metadata = { title: "Analytics · Insightful" };
+export const metadata: Metadata = { title: "Analytics · InsightFlow" };
 
 export default function AnalyticsPage() {
   return (

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import BusinessesClient from "./BusinessesClient";
 import RequireAccess from "@/components/dashboard/RequireAccess";
 
-export const metadata: Metadata = { title: "Businesses · Insightful" };
+export const metadata: Metadata = { title: "Businesses · InsightFlow" };
 
 export default function BusinessesPage() {
   return (

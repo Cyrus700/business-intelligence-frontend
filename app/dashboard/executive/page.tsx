@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import ExecutiveClient from "./ExecutiveClient";
 import RequireAccess from "@/components/dashboard/RequireAccess";
 
-export const metadata: Metadata = { title: "Executive Dashboard · Insightful" };
+export const metadata: Metadata = { title: "Executive Dashboard · InsightFlow" };
 
 export default function ExecutivePage() {
   return (

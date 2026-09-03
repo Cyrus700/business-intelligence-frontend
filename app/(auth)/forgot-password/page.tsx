@@ -3,7 +3,7 @@ import Link from "next/link";
 import AuthShell from "@/components/auth/AuthShell";
 import ForgotForm from "@/components/auth/ForgotForm";
 
-export const metadata: Metadata = { title: "Reset password · Insightful" };
+export const metadata: Metadata = { title: "Reset password · InsightFlow" };
 
 export default function ForgotPasswordPage() {
   return (

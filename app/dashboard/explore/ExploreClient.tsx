@@ -65,7 +65,7 @@ export default function ExploreClient() {
         page_size: "10000",
       });
       const res = await fetch(`/api/v1/sales/transactions?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("insightful.auth") || ""}` },
+        headers: { Authorization: `Bearer ${localStorage.getItem("insightflow.token") ?? localStorage.getItem("insightful.token") ?? ""}` },
       });
       if (!res.ok) throw new Error("Export failed");
       const blob = await res.blob();
