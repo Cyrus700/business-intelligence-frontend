@@ -6,7 +6,7 @@ import { useGSAP } from "@gsap/react";
 import Section from "@/components/ui/Section";
 import SectionHeading from "@/components/ui/SectionHeading";
 import Icon from "@/components/ui/Icon";
-import { DUR, EASE, pointerSpotlight, prefersReducedMotion } from "@/lib/motion";
+import { DUR, EASE, pointerSpotlight, prefersReducedMotion, tilt } from "@/lib/motion";
 import { useLandingData } from "@/lib/landing-api";
 import { FEATURES } from "@/lib/content";
 
@@ -26,35 +26,56 @@ export default function Features() {
       const el = root.current;
       if (!el) return;
       const cards = gsap.utils.toArray<HTMLElement>("[data-feature]", el);
+      const icons = gsap.utils.toArray<HTMLElement>("[data-feature-icon]", el);
       const cleanups: Array<() => void> = [];
 
       if (prefersReducedMotion()) {
-        gsap.set(cards, { opacity: 1, y: 0, scale: 1, clearProps: "transform,opacity" });
+        gsap.set(cards, { opacity: 1, y: 0, scale: 1, rotationX: 0, clearProps: "transform,opacity" });
+        gsap.set(icons, { opacity: 1, scale: 1, rotation: 0, clearProps: "transform,opacity" });
         return;
       }
 
-      // Grid-aware stagger so cards arrive row by row — reads far better than
-      // one long sequential cascade across a 3-column grid.
+      // Premium landing choreography: cards lift with subtle 3D, icons pop
+      // with a crisp back-ease — feels engineered, not just faded in.
       gsap.from(cards, {
-        y: 34,
+        y: 46,
         opacity: 0,
-        scale: 0.97,
-        duration: DUR.base,
-        ease: EASE.out,
-        stagger: { each: 0.08, grid: "auto", from: "start" },
-        scrollTrigger: { trigger: el, start: "top 80%", once: true },
+        scale: 0.93,
+        rotationX: 8,
+        transformPerspective: 900,
+        duration: 0.85,
+        ease: EASE.expo,
+        stagger: { each: 0.09, grid: "auto", from: "start" },
+        scrollTrigger: { trigger: el, start: "top 82%", once: true },
       });
 
-      // Phone fallback: if ScrollTrigger never fires (e.g. element already
-      // in viewport, reduced-motion calc fails, or user scrolls past), force
-      // visible after the stagger should have finished. Fixes the white-space
-      // where 4/6 cards stay at opacity:0.
+      gsap.from(icons, {
+        scale: 0.35,
+        opacity: 0,
+        rotation: -18,
+        duration: 0.65,
+        ease: EASE.pop,
+        stagger: { each: 0.08, grid: "auto", from: "start" },
+        delay: 0.18,
+        scrollTrigger: { trigger: el, start: "top 82%", once: true },
+      });
+
+      // Hover polish: spotlight + subtle 3D tilt on desktop.
+      cards.forEach((card) => {
+        cleanups.push(pointerSpotlight(card));
+        if (window.innerWidth >= 1024) cleanups.push(tilt(card as HTMLElement, 3));
+      });
+
+      // Phone fallback: if ScrollTrigger never fires (element already in
+      // viewport, throttled JS, or user scrolls past), force visible after
+      // the stagger should have finished. Fixes the white-space where 4/6
+      // cards stay at opacity:0.
       const fallback = window.setTimeout(() => {
-        gsap.set(cards, { opacity: 1, y: 0, scale: 1, clearProps: "transform,opacity" });
-      }, 1800);
+        gsap.set(cards, { opacity: 1, y: 0, scale: 1, rotationX: 0, clearProps: "transform,opacity" });
+        gsap.set(icons, { opacity: 1, scale: 1, rotation: 0, clearProps: "transform,opacity" });
+      }, 1850);
       cleanups.push(() => window.clearTimeout(fallback));
 
-      cards.forEach((card) => cleanups.push(pointerSpotlight(card)));
       return () => cleanups.forEach((fn) => fn());
     },
     { scope: root, dependencies: [features.length] },
@@ -81,7 +102,10 @@ export default function Features() {
               data-feature
               className="surface-spotlight group flex h-full flex-col rounded-xl sm:rounded-2xl border border-border bg-white p-5 sm:p-6 lg:p-7 shadow-card transition-all duration-300 lg:hover:-translate-y-1 hover:border-primary/30 lg:hover:shadow-lift"
             >
-              <span className="grid h-10 w-10 sm:h-12 sm:w-12 place-items-center rounded-xl bg-primary-50 text-primary transition-all duration-300 group-hover:-rotate-2 sm:group-hover:-rotate-3 group-hover:scale-105 sm:group-hover:scale-110 group-hover:bg-primary group-hover:text-white">
+              <span
+                data-feature-icon
+                className="grid h-10 w-10 sm:h-12 sm:w-12 place-items-center rounded-xl bg-primary-50 text-primary transition-all duration-300 group-hover:-rotate-2 sm:group-hover:-rotate-3 group-hover:scale-105 sm:group-hover:scale-110 group-hover:bg-primary group-hover:text-white will-change-transform"
+              >
                 <Icon name={f.icon as IconName} className="h-5 w-5 sm:h-6 sm:w-6" />
               </span>
               <h3 className="mt-4 sm:mt-5 text-base sm:text-lg font-semibold text-ink leading-tight">{f.title}</h3>
