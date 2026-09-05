@@ -7,7 +7,6 @@ import { useAuth } from "@/lib/auth-context";
 import { useRole, useDashboardBase } from "@/lib/use-role";
 import { getRoleInfo, type Role } from "@/lib/permissions";
 import Icon from "@/components/ui/Icon";
-import OrgSwitcher from "@/components/dashboard/OrgSwitcher";
 import { useOrganizations } from "@/lib/api";
 
 const ROLE_BADGE: Record<Role, string> = {
@@ -79,7 +78,6 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
             {businessName}
           </span>
         )}
-        <OrgSwitcher />
         {role && (
           <span
             className={clsx(
