@@ -1170,20 +1170,29 @@ export type KpiComparison = {
   label: string;
   unit: string;
   values: number[];
+  per_day_values?: number[];
   deltas_vs_first: (number | null)[];
   pct_vs_first: (number | null)[];
   deltas_vs_prev: (number | null)[];
   pct_vs_prev: (number | null)[];
+  per_day_pct_vs_first?: (number | null)[];
   total_delta: number;
   total_pct: number | null;
   min: number;
   max: number;
+  avg?: number;
+  stddev?: number;
+  cv_pct?: number | null;
+  cagr_pct?: number | null;
+  best_period?: string | null;
+  worst_period?: string | null;
   trend: "up" | "down" | "flat";
 };
 
 export type DimensionalSeriesMember = {
   key: string;
   values: number[];
+  per_day?: number[];
   shares: number[];
   orders: number[];
   delta_vs_first: number;
@@ -1192,13 +1201,17 @@ export type DimensionalSeriesMember = {
   trend: string;
   total: number;
   avg: number;
+  stddev?: number;
+  cv_pct?: number | null;
 };
 
 export type DimensionalCompare = {
   dimension: string;
   period_labels: string[];
   totals: number[];
+  per_day_totals?: number[];
   series: DimensionalSeriesMember[];
+  all_keys_count?: number;
   top_gainer: DimensionalSeriesMember | null;
   top_decliner: DimensionalSeriesMember | null;
 };
@@ -1214,6 +1227,7 @@ export type CompareInsights = {
   highlights: string[];
   drivers: string[];
   watchouts: string[];
+  momentum?: string[];
   stats: Record<string, string>;
   method: string;
 };
@@ -1232,8 +1246,9 @@ export type CompareResponse = {
   dimensional: Record<string, DimensionalCompare>;
   timeseries_overlay: TimeseriesOverlay | null;
   insights: CompareInsights;
+  warnings?: string[];
   ai?: CompareAISuggestions;
-  meta: { generated_at: string; timezone: string; org_scoped: boolean; metrics: string[]; dimensions: string[] };
+  meta: { generated_at: string; timezone: string; org_scoped: boolean; metrics: string[]; dimensions: string[]; periods_count?: number; cached?: boolean };
 };
 
 export type CompareMeta = {

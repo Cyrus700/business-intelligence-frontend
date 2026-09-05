@@ -141,7 +141,7 @@ function KpiCards({ data, normalize }: { data: CompareResponse; normalize: boole
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-[11px] font-semibold uppercase tracking-widest text-ink-soft truncate">{kc.label}</p>
-                <p className="mt-1 text-xs text-ink-muted">Unit: {kc.unit || "—"} · Trend: {kc.trend} {kc.cagr_pct !== null ? `· CAGR ${kc.cagr_pct > 0 ? "+" : ""}${kc.cagr_pct}%` : ""}</p>
+                <p className="mt-1 text-xs text-ink-muted">Unit: {kc.unit || "—"} · Trend: {kc.trend} {kc.cagr_pct != null ? `· CAGR ${kc.cagr_pct > 0 ? "+" : ""}${kc.cagr_pct}%` : ""}</p>
               </div>
               <span
                 className={`shrink-0 inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold ${changeColor(pct)}`}
@@ -198,7 +198,7 @@ function GroupedKpiBarChart({ data, normalize }: { data: CompareResponse; normal
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       {data.kpi_comparison.map((kc) => {
-        const rawValues = (normalize && (kc as unknown as { per_day_values?: number[] }).per_day_values) ? (kc as unknown as { per_day_values: number[] }) : kc.values;
+        const rawValues = (normalize && (kc as unknown as { per_day_values?: number[] }).per_day_values) ? (kc as unknown as { per_day_values: number[] }).per_day_values : kc.values;
         const chartData = periods.map((p, i) => ({ period: p.label, value: rawValues[i] }));
         const isCurrency = kc.metric !== "orders";
         const isEmpty = chartData.every((d) => d.value === 0);
@@ -255,7 +255,8 @@ function DimensionalPanels({ data, normalize }: { data: CompareResponse; normali
         const chartData = payload.series.slice(0, 8).map((s) => {
           const row: Record<string, string | number> = { key: s.key.length > 14 ? s.key.slice(0, 14) + "…" : s.key };
           payload.period_labels.forEach((lab, idx) => {
-            const vals = normalize && (s as unknown as { per_day?: number[] }).per_day ? (s as unknown as { per_day: number[] })[idx] : s.values[idx];
+            const pd = (s as unknown as { per_day?: number[] }).per_day;
+            const vals = normalize && pd ? pd[idx] : s.values[idx];
             row[lab] = vals ?? 0;
           });
           return row;
@@ -272,7 +273,7 @@ function DimensionalPanels({ data, normalize }: { data: CompareResponse; normali
                 {payload.top_gainer && payload.top_gainer.key !== "Other" && (
                   <span className="rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-semibold text-emerald-700 max-w-[180px] truncate">Top gainer: {payload.top_gainer.key} {formatChange(payload.top_gainer.pct_vs_first)}</span>
                 )}
-                {payload.all_keys_count > 8 && <span className="rounded-full bg-slate-50 border border-slate-200 px-2 py-1 text-xs text-slate-600">+{payload.all_keys_count - 8} more</span>}
+                {(payload.all_keys_count ?? 0) > 8 && <span className="rounded-full bg-slate-50 border border-slate-200 px-2 py-1 text-xs text-slate-600">+{(payload.all_keys_count ?? 0) - 8} more</span>}
               </div>
             </div>
 
@@ -310,11 +311,11 @@ function DimensionalPanels({ data, normalize }: { data: CompareResponse; normali
                 </thead>
                 <tbody>
                   {payload.series.slice(0, 10).map((s) => {
-                    const vals = normalize && (s as unknown as { per_day?: number[] }).per_day ? (s as unknown as { per_day: number[] }) : s.values;
+                    const vals = normalize && (s as unknown as { per_day?: number[] }).per_day ? (s as unknown as { per_day: number[] }).per_day : s.values;
                     return (
                       <tr key={s.key} className="border-b border-slate-100 hover:bg-slate-50/60">
                         <td className="py-2 pr-3 font-medium text-ink max-w-[160px] truncate" title={s.key}>{s.key}</td>
-                        {vals.map((v, i) => (
+                        {(vals as number[]).map((v, i) => (
                           <td key={i} className="py-2 pr-3 text-right font-mono text-ink tabular-nums whitespace-nowrap">{npr(v as number)}</td>
                         ))}
                         <td className={`py-2 pr-3 text-right font-semibold whitespace-nowrap ${s.pct_vs_first === null ? "text-slate-400" : s.pct_vs_first >= 0 ? "text-emerald-600" : "text-red-600"}`}>{formatChange(s.pct_vs_first)}</td>
@@ -330,7 +331,7 @@ function DimensionalPanels({ data, normalize }: { data: CompareResponse; normali
             {/* Mobile cards */}
             <div className="mt-4 grid gap-3 sm:hidden">
               {payload.series.slice(0, 6).map((s) => {
-                const vals = normalize && (s as unknown as { per_day?: number[] }).per_day ? (s as unknown as { per_day: number[] }) : s.values;
+                const vals = normalize && (s as unknown as { per_day?: number[] }).per_day ? (s as unknown as { per_day: number[] }).per_day : s.values;
                 return (
                   <div key={s.key} className="rounded-xl border border-slate-200 p-3 bg-slate-50/50">
                     <div className="flex items-center justify-between gap-2">
@@ -1055,7 +1056,7 @@ export default function CompareClient() {
               <p className="text-[11px] font-semibold uppercase tracking-widest text-ink-soft">Verdict</p>
               <p className="mt-1 text-base font-semibold text-ink leading-tight">{result.insights.verdict}</p>
               <p className="text-xs text-ink-soft mt-1">{result.insights.method}</p>
-              {result.warnings?.length > 0 && <p className="mt-2 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1">⚠ {result.warnings[0]}</p>}
+              {(result.warnings?.length ?? 0) > 0 && <p className="mt-2 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1">⚠ {result.warnings![0]}</p>}
             </div>
             <div className="flex flex-wrap items-center gap-2 shrink-0">
               <button type="button" onClick={exportCsv} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-medium text-ink hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400">⤓ CSV</button>
