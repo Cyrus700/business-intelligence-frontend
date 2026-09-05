@@ -42,6 +42,7 @@ export const queryKeys = {
   coverage: { all: ["coverage"] as const, data: () => ["coverage", "data"] as const },
   diagnostics: { all: ["diagnostics"] as const, change: (p?: object) => ["diagnostics", "change", p] as const },
   rbac: { all: ["rbac"] as const, matrix: () => ["rbac", "matrix"] as const, me: () => ["rbac", "me"] as const, audit: (limit: number) => ["rbac", "audit", limit] as const },
+  compare: { all: ["compare"] as const, meta: () => ["compare", "meta"] as const, result: (b: object) => ["compare", "result", b] as const },
 };
 
 // ── Raw fetch helpers (used by useQuery + useMutation) ───────────
@@ -1151,4 +1152,119 @@ export async function approveBusiness(id: string): Promise<BusinessOut> {
 
 export async function rejectBusiness(id: string, reason?: string): Promise<BusinessOut> {
   return apiPost<BusinessOut>(`/auth/admin/organizations/${id}/reject`, { reason });
+}
+
+// ── Compare Periods (Professional) ───────────────────────────────────
+
+export type ComparePeriod = {
+  id: string;
+  label: string;
+  from: string;
+  to: string;
+  span_days: number;
+  metrics: Record<string, number>;
+};
+
+export type KpiComparison = {
+  metric: string;
+  label: string;
+  unit: string;
+  values: number[];
+  deltas_vs_first: (number | null)[];
+  pct_vs_first: (number | null)[];
+  deltas_vs_prev: (number | null)[];
+  pct_vs_prev: (number | null)[];
+  total_delta: number;
+  total_pct: number | null;
+  min: number;
+  max: number;
+  trend: "up" | "down" | "flat";
+};
+
+export type DimensionalSeriesMember = {
+  key: string;
+  values: number[];
+  shares: number[];
+  orders: number[];
+  delta_vs_first: number;
+  pct_vs_first: number | null;
+  direction: "up" | "down" | "flat";
+  trend: string;
+  total: number;
+  avg: number;
+};
+
+export type DimensionalCompare = {
+  dimension: string;
+  period_labels: string[];
+  totals: number[];
+  series: DimensionalSeriesMember[];
+  top_gainer: DimensionalSeriesMember | null;
+  top_decliner: DimensionalSeriesMember | null;
+};
+
+export type TimeseriesOverlay = {
+  metric: string;
+  granularity: string;
+  series: { period_id: string; period_label: string; granularity: string; points: { period: string; value: number }[] }[];
+};
+
+export type CompareInsights = {
+  verdict: string;
+  highlights: string[];
+  drivers: string[];
+  watchouts: string[];
+  stats: Record<string, string>;
+  method: string;
+};
+
+export type CompareAISuggestions = {
+  summary: string;
+  narrative: string;
+  sections: Record<string, unknown>;
+  source: "llm" | "deterministic" | "unavailable";
+  disclaimer: string;
+};
+
+export type CompareResponse = {
+  periods: ComparePeriod[];
+  kpi_comparison: KpiComparison[];
+  dimensional: Record<string, DimensionalCompare>;
+  timeseries_overlay: TimeseriesOverlay | null;
+  insights: CompareInsights;
+  ai?: CompareAISuggestions;
+  meta: { generated_at: string; timezone: string; org_scoped: boolean; metrics: string[]; dimensions: string[] };
+};
+
+export type CompareMeta = {
+  allowed_metrics: string[];
+  allowed_dimensions: string[];
+  metric_labels: Record<string, string>;
+  limits: { min_periods: number; max_periods: number; max_span_days: number };
+  today: string;
+  timezone: string;
+};
+
+export type CompareRequestBody = {
+  periods?: { from: string; to: string; label?: string; id?: string }[];
+  months?: string[];
+  years?: number[];
+  metrics?: string[];
+  dimensions?: string[];
+  include_timeseries?: boolean;
+  timeseries_metric?: string;
+  timeseries_granularity?: string;
+  include_ai?: boolean;
+};
+
+export async function postCompare(body: CompareRequestBody): Promise<CompareResponse> {
+  return apiPost<CompareResponse>("/analytics/compare", body);
+}
+
+export async function postCompareAI(body: CompareRequestBody): Promise<{ ai: CompareAISuggestions; insights: CompareInsights; periods: ComparePeriod[] }> {
+  return apiPost<{ ai: CompareAISuggestions; insights: CompareInsights; periods: ComparePeriod[] }>("/analytics/compare/ai", body);
+}
+
+export async function getCompareMeta(): Promise<CompareMeta> {
+  return apiGet<CompareMeta>("/analytics/compare/meta");
 }

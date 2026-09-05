@@ -19,6 +19,7 @@ export const DASH_NAV: NavItem[] = [
   { label: "Explore", href: "/dashboard/explore", icon: "search", permission: "sales:view" },
   { label: "AI Assistant", href: "/dashboard/ai", icon: "spark", permission: "insights:view" },
   { label: "Analytics", href: "/dashboard/analytics", icon: "trend", permission: "timeseries:view" },
+  { label: "Compare", href: "/dashboard/compare", icon: "columns", permission: "compare:view" },
   { label: "What-If", href: "/dashboard/what-if", icon: "activity", permission: "timeseries:view" },
   { label: "Reports", href: "/dashboard/reports", icon: "table", permission: "reports:view" },
   { label: "Alerts", href: "/dashboard/alerts", icon: "bell", badge: "2", permission: "anomalies:view" },
