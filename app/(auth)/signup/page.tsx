@@ -6,11 +6,18 @@ import RegisterTabs from "@/components/auth/RegisterTabs";
 export const metadata: Metadata = { title: "Create account · InsightFlow" };
 
 // Open-redirect guard: only accept a `next` that stays inside the app —
-const DASHBOARD_NEXT = /^\/(?:dashboard(?:\/|$)|[a-z][a-z0-9_-]{1,31}\/dashboard(?:\/|$))/;
+const DASHBOARD_NEXT = /^\/(?:dashboard(?:\/|$|\?)|[a-z][a-z0-9_-]{1,31}\/dashboard(?:\/|$|\?))/;
 
 function safeNext(value: string | null): string {
   if (!value) return "";
-  return DASHBOARD_NEXT.test(value) ? value : "";
+  let decoded = value;
+  try {
+    decoded = decodeURIComponent(value);
+  } catch {
+    return "";
+  }
+  if (decoded.startsWith("//")) return "";
+  return DASHBOARD_NEXT.test(decoded) ? decoded : "";
 }
 
 export default async function SignupPage({

@@ -21,8 +21,25 @@ function CallbackInner() {
   const { refresh } = useAuth();
   const [error, setError] = useState<string | null>(null);
 
+  // Allow the backend to echo a validated `next` destination (set via ?next= on /auth/google/login)
+  // Same guard as login/page.tsx — trust only dashboard routes.
+  const DASHBOARD_NEXT = /^\/(?:dashboard(?:\/|$|\?)|[a-z][a-z0-9_-]{1,31}\/dashboard(?:\/|$|\?))/;
+  function safeNext(value: string | null): string {
+    if (!value) return "";
+    let decoded = value;
+    try {
+      decoded = decodeURIComponent(value);
+    } catch {
+      return "";
+    }
+    if (decoded.startsWith("//")) return "";
+    return DASHBOARD_NEXT.test(decoded) ? decoded : "";
+  }
+
   useEffect(() => {
     const token = searchParams.get("token");
+    const nextRaw = searchParams.get("next");
+    const safeNextDest = safeNext(nextRaw);
     if (!token) {
       setError("No token received");
       return;
@@ -37,6 +54,42 @@ function CallbackInner() {
     setToken(token);
     setSession(session);
     refresh().then((profile) => {
+      if (safeNextDest) {
+        const role = profile?.role;
+        const LEGACY = /^\/dashboard(?:\/|$|\?)/;
+        const ROLE_PREFIX = /^\/[a-z][a-z0-9_-]{1,31}\/dashboard(?:\/|$|\?)/;
+        if (LEGACY.test(safeNextDest)) {
+          const rest = safeNextDest.slice("/dashboard".length);
+          if (!rest) {
+            router.replace(dashboardPath(role));
+            return;
+          }
+          if (rest.startsWith("?")) {
+            router.replace(`${dashboardPath(role)}${rest}`);
+            return;
+          }
+          router.replace(dashboardPath(role, rest));
+          return;
+        }
+        if (ROLE_PREFIX.test(safeNextDest)) {
+          const m = safeNextDest.match(/^\/[a-z][a-z0-9_-]{1,31}(\/dashboard.*)$/);
+          if (m && role) {
+            const inner = m[1].slice("/dashboard".length);
+            if (!inner) {
+              router.replace(dashboardPath(role));
+              return;
+            }
+            if (inner.startsWith("?")) {
+              router.replace(`${dashboardPath(role)}${inner}`);
+              return;
+            }
+            router.replace(dashboardPath(role, inner));
+            return;
+          }
+        }
+        router.replace(safeNextDest);
+        return;
+      }
       router.replace(dashboardPath(profile?.role));
     });
   }, [searchParams, router, refresh]);

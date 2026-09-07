@@ -16,6 +16,28 @@ export default function SignupForm({ next = "", inviteToken = "" }: { next?: str
   const [error, setError] = useState("");
   const inviteFromQuery = inviteToken;
 
+  function resolveNext(profileRole: string | null | undefined): string {
+    if (!next) return dashboardPath(profileRole);
+    const ROLE_PREFIX = /^\/[a-z][a-z0-9_-]{1,31}\/dashboard(?:\/|$|\?)/;
+    const LEGACY = /^\/dashboard(?:\/|$|\?)/;
+    if (LEGACY.test(next)) {
+      const rest = next.slice("/dashboard".length);
+      if (!rest) return dashboardPath(profileRole);
+      if (rest.startsWith("?")) return `${dashboardPath(profileRole)}${rest}`;
+      return dashboardPath(profileRole, rest);
+    }
+    if (ROLE_PREFIX.test(next)) {
+      const m = next.match(/^\/[a-z][a-z0-9_-]{1,31}(\/dashboard.*)$/);
+      if (m) {
+        const inner = m[1].slice("/dashboard".length);
+        if (!inner) return dashboardPath(profileRole);
+        if (inner.startsWith("?")) return `${dashboardPath(profileRole)}${inner}`;
+        return dashboardPath(profileRole, inner);
+      }
+    }
+    return next;
+  }
+
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
@@ -37,7 +59,7 @@ export default function SignupForm({ next = "", inviteToken = "" }: { next?: str
     setLoading(true);
     try {
       const profile = await signup(email, password, name || null, token || null);
-      router.push(next || dashboardPath(profile.role));
+      router.push(resolveNext(profile.role));
     } catch (err) {
       if (err instanceof ApiError) setError(err.message);
       else setError("Something went wrong. Please try again.");
@@ -48,7 +70,7 @@ export default function SignupForm({ next = "", inviteToken = "" }: { next?: str
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
-      <SocialButtons />
+      <SocialButtons next={next} />
 
       {error && (
         <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm text-red-600">

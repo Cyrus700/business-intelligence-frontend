@@ -21,7 +21,11 @@ function roleFrom(request: NextRequest): string | null {
 }
 
 function loginRedirect(request: NextRequest): NextResponse {
-  const next = encodeURIComponent(request.nextUrl.pathname);
+  // Preserve pathname + search so deep links (e.g. /analyst/dashboard?tab=revenue)
+  // survive the login hop. encodeURIComponent keeps the whole destination opaque
+  // inside the `next` param without leaking `&` boundaries.
+  const rawNext = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+  const next = encodeURIComponent(rawNext);
   return NextResponse.redirect(new URL(`/login?next=${next}`, request.url));
 }
 
@@ -59,6 +63,21 @@ export function proxy(request: NextRequest) {
   // Signed-in users don't belong on auth pages.
   if (["/login", "/signup", "/register", "/forgot-password", "/register-business", "/verify-email"].includes(pathname)) {
     if (signedIn(request) && pathname !== "/verify-email") {
+      // Respect an explicit `next` on auth pages (e.g. a bookmarked /login?next=/analyst/dashboard/reports)
+      // when it points at a valid dashboard location; otherwise fall back to role home.
+      const rawNext = request.nextUrl.searchParams.get("next");
+      if (rawNext) {
+        try {
+          const decoded = decodeURIComponent(rawNext);
+          if (decoded.startsWith("//")) throw new Error("protocol-relative");
+          const DASHBOARD_NEXT = /^\/(?:dashboard(?:\/|$|\?)|[a-z][a-z0-9_-]{1,31}\/dashboard(?:\/|$|\?))/;
+          if (DASHBOARD_NEXT.test(decoded)) {
+            return NextResponse.redirect(new URL(decoded, request.url));
+          }
+        } catch {
+          // ignore malformed encoding — fall through to role home
+        }
+      }
       const role = roleFrom(request) ?? "analyst";
       return NextResponse.redirect(new URL(`/${role}/dashboard`, request.url));
     }

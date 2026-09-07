@@ -10,11 +10,24 @@ export const metadata: Metadata = { title: "Sign in · InsightFlow" };
 // the former into the latter for an authenticated visit). Empty means "no
 // explicit destination", letting the form redirect to the signed-in
 // account's own role home instead of guessing.
-const DASHBOARD_NEXT = /^\/(?:dashboard(?:\/|$)|[a-z][a-z0-9_-]{1,31}\/dashboard(?:\/|$))/;
+//
+// Allow optional query/hash after the dashboard prefix (e.g. /dashboard?tab=foo
+// or /admin/dashboard/reports?from=2024-01-01).
+const DASHBOARD_NEXT = /^\/(?:dashboard(?:\/|$|\?)|[a-z][a-z0-9_-]{1,31}\/dashboard(?:\/|$|\?))/;
 
 function safeNext(value: string | null): string {
   if (!value) return "";
-  return DASHBOARD_NEXT.test(value) ? value : "";
+  // Next.js already decodes searchParams, but be tolerant of double-encoding
+  // and reject "//evil.com" style bypasses.
+  let decoded = value;
+  try {
+    decoded = decodeURIComponent(value);
+  } catch {
+    return "";
+  }
+  // Strip protocol-relative bypass: //evil.com/dashboard
+  if (decoded.startsWith("//")) return "";
+  return DASHBOARD_NEXT.test(decoded) ? decoded : "";
 }
 
 export default async function LoginPage({

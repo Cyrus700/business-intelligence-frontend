@@ -1,10 +1,13 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
 
-export default function SocialButtons() {
+export default function SocialButtons({ next = "" }: { next?: string }) {
+  // Preserve validated post-login destination through the OAuth state hop.
+  // The backend encodes it into `state` and returns it via /auth/callback?next=.
+  const href = next ? `${API_URL}/auth/google/login?next=${encodeURIComponent(next)}` : `${API_URL}/auth/google/login`;
   return (
     <>
       <a
-        href={`${API_URL}/auth/google/login`}
+        href={href}
         className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-border bg-white text-sm font-medium text-ink transition-colors hover:bg-bg-soft"
       >
         <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>

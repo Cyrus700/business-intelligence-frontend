@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { syncSessionCookie } from "@/lib/auth";
+import { clearAll, syncSessionCookie } from "@/lib/auth";
 
 export default function RequireAuth({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -16,7 +16,25 @@ export default function RequireAuth({ children }: { children: React.ReactNode })
         // server-side proxy gate stays in sync (OAuth/any session source).
         syncSessionCookie();
       } else {
-        router.replace("/login");
+        // Preserve the page the user tried to reach so post-login can return there.
+        // Also clear any stale marker cookie so the proxy doesn't think we're still signed in
+        // and bounce between /login and /dashboard.
+        clearAll();
+        // Use window.location directly to avoid useSearchParams() suspense requirement
+        // during static prerender (RequireAuth is in the dashboard layout).
+        let current = "";
+        if (typeof window !== "undefined") {
+          current = `${window.location.pathname}${window.location.search}`;
+        }
+        const DASHBOARD_NEXT = /^\/(?:dashboard(?:\/|$|\?)|[a-z][a-z0-9_-]{1,31}\/dashboard(?:\/|$|\?))/;
+        let next = "";
+        try {
+          // Only preserve dashboard destinations; otherwise fall back to plain /login
+          if (current && DASHBOARD_NEXT.test(decodeURIComponent(current))) next = current;
+        } catch {
+          next = "";
+        }
+        router.replace(next ? `/login?next=${encodeURIComponent(next)}` : "/login");
       }
     }
   }, [loading, user, router]);

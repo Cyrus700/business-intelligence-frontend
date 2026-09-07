@@ -55,16 +55,17 @@ export default function FloatingAiChat() {
         )}
       </button>
 
-      {/* Panel */}
+      {/* Panel — resizable, high-context */}
       <div
         className={clsx(
           "fixed bottom-20 right-5 z-[80] flex origin-bottom-right flex-col overflow-hidden rounded-2xl border border-border bg-white shadow-lift transition-all duration-200 sm:bottom-24 sm:right-6",
-          "h-[min(40rem,calc(100dvh-7rem))] w-[min(24rem,calc(100vw-2.5rem))] sm:w-96",
+          "h-[min(42rem,calc(100dvh-7rem))] w-[min(26rem,calc(100vw-2.5rem))] sm:w-[26rem]",
+          "resize-y sm:resize overflow-auto min-h-[24rem] max-h-[85vh] min-w-[20rem] max-w-[90vw]",
           widgetOpen ? "scale-100 opacity-100" : "pointer-events-none scale-95 opacity-0",
         )}
         role="dialog"
         aria-modal="true"
-        aria-label="AI assistant chat"
+        aria-label="AI assistant chat — drag bottom edge to resize, scroll for high-context history"
         inert={!widgetOpen}
       >
         {/* Header */}

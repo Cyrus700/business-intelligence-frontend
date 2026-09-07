@@ -16,6 +16,31 @@ export default function LoginForm({ next = "" }: { next?: string }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Resolve a validated `next` against the actual signed-in role so
+  // legacy `/dashboard` doesn't rely on a second server redirect hop and
+  // can't fall through with a stale role prefix.
+  function resolveNext(profileRole: string | null | undefined): string {
+    if (!next) return dashboardPath(profileRole);
+    const ROLE_PREFIX = /^\/[a-z][a-z0-9_-]{1,31}\/dashboard(?:\/|$|\?)/;
+    const LEGACY = /^\/dashboard(?:\/|$|\?)/;
+    if (LEGACY.test(next)) {
+      const rest = next.slice("/dashboard".length);
+      if (!rest) return dashboardPath(profileRole);
+      if (rest.startsWith("?")) return `${dashboardPath(profileRole)}${rest}`;
+      return dashboardPath(profileRole, rest);
+    }
+    if (ROLE_PREFIX.test(next)) {
+      const m = next.match(/^\/[a-z][a-z0-9_-]{1,31}(\/dashboard.*)$/);
+      if (m) {
+        const innerRest = m[1].slice("/dashboard".length);
+        if (!innerRest) return dashboardPath(profileRole);
+        if (innerRest.startsWith("?")) return `${dashboardPath(profileRole)}${innerRest}`;
+        return dashboardPath(profileRole, innerRest);
+      }
+    }
+    return next;
+  }
+
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
@@ -31,7 +56,8 @@ export default function LoginForm({ next = "" }: { next?: string }) {
     setLoading(true);
     try {
       const profile = await login(email, password);
-      router.push(next || dashboardPath(profile.role));
+      const dest = resolveNext(profile.role);
+      router.push(dest);
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -45,7 +71,7 @@ export default function LoginForm({ next = "" }: { next?: string }) {
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
-      <SocialButtons />
+      <SocialButtons next={next} />
 
       {error && (
         <div className="flex items-start gap-2.5 rounded-xl border border-warn/30 bg-warn-50 px-4 py-3 text-sm text-warn">

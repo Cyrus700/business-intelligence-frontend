@@ -30,24 +30,35 @@ function roleFromToken(token: string): string | null {
   return typeof role === "string" ? role : null;
 }
 
+function isSecureContext(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.location.protocol === "https:";
+}
+
+function cookieSecureSuffix(): string {
+  return isSecureContext() ? "; secure" : "";
+}
+
 function setAuthCookie(token: string) {
   if (typeof document === "undefined") return;
-  document.cookie = `${AUTH_COOKIE}=1; path=/; max-age=${AUTH_COOKIE_MAX_AGE}; samesite=lax`;
+  const secure = cookieSecureSuffix();
+  document.cookie = `${AUTH_COOKIE}=1; path=/; max-age=${AUTH_COOKIE_MAX_AGE}; samesite=lax${secure}`;
   const role = roleFromToken(token);
   document.cookie = role
-    ? `${ROLE_COOKIE}=${role}; path=/; max-age=${AUTH_COOKIE_MAX_AGE}; samesite=lax`
-    : `${ROLE_COOKIE}=; path=/; max-age=0; samesite=lax`;
+    ? `${ROLE_COOKIE}=${role}; path=/; max-age=${AUTH_COOKIE_MAX_AGE}; samesite=lax${secure}`
+    : `${ROLE_COOKIE}=; path=/; max-age=0; samesite=lax${secure}`;
   // Clear legacy cookies once migrated
-  document.cookie = `${LEGACY_AUTH_COOKIE}=; path=/; max-age=0; samesite=lax`;
-  document.cookie = `${LEGACY_ROLE_COOKIE}=; path=/; max-age=0; samesite=lax`;
+  document.cookie = `${LEGACY_AUTH_COOKIE}=; path=/; max-age=0; samesite=lax${secure}`;
+  document.cookie = `${LEGACY_ROLE_COOKIE}=; path=/; max-age=0; samesite=lax${secure}`;
 }
 
 function clearAuthCookie() {
   if (typeof document === "undefined") return;
-  document.cookie = `${AUTH_COOKIE}=; path=/; max-age=0; samesite=lax`;
-  document.cookie = `${ROLE_COOKIE}=; path=/; max-age=0; samesite=lax`;
-  document.cookie = `${LEGACY_AUTH_COOKIE}=; path=/; max-age=0; samesite=lax`;
-  document.cookie = `${LEGACY_ROLE_COOKIE}=; path=/; max-age=0; samesite=lax`;
+  const secure = cookieSecureSuffix();
+  document.cookie = `${AUTH_COOKIE}=; path=/; max-age=0; samesite=lax${secure}`;
+  document.cookie = `${ROLE_COOKIE}=; path=/; max-age=0; samesite=lax${secure}`;
+  document.cookie = `${LEGACY_AUTH_COOKIE}=; path=/; max-age=0; samesite=lax${secure}`;
+  document.cookie = `${LEGACY_ROLE_COOKIE}=; path=/; max-age=0; samesite=lax${secure}`;
 }
 
 /** Reflects the current token into the auth cookie. Safe to call repeatedly. */
