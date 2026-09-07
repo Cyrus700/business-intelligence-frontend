@@ -68,9 +68,12 @@ export default function Footer() {
                     <li key={link}>
                       <a
                         href="#"
-                        className="text-sm text-ink-soft transition-colors hover:text-primary break-words"
+                        className="inline-flex items-center gap-2 text-sm text-ink-soft transition-colors hover:text-primary break-words"
                       >
-                        {link}
+                        <span>{link}</span>
+                        {link === "Pricing" && (
+                          <span className="rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-white">Coming Soon</span>
+                        )}
                       </a>
                     </li>
                   ))}

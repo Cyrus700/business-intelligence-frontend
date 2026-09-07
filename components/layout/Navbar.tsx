@@ -135,9 +135,12 @@ export default function Navbar() {
             <li key={link.href}>
               <a
                 href={link.href}
-                className="group relative text-sm font-medium text-ink-soft transition-colors hover:text-ink"
+                className="group relative inline-flex items-center gap-2 text-sm font-medium text-ink-soft transition-colors hover:text-ink"
               >
                 {link.label}
+                {link.label === "Pricing" && (
+                  <span className="rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-white">Coming Soon</span>
+                )}
                 <span className="absolute -bottom-1 left-0 h-px w-full origin-left scale-x-0 bg-primary transition-transform duration-300 group-hover:scale-x-100" />
               </a>
             </li>
@@ -206,9 +209,12 @@ export default function Navbar() {
                 href={link.href}
                 onClick={() => setOpen(false)}
                 data-menu-link
-                className="block rounded-xl px-3.5 py-3 text-[15px] font-medium text-ink-soft transition-colors hover:bg-bg-soft hover:text-ink active:bg-bg-soft"
+                className="flex items-center justify-between rounded-xl px-3.5 py-3 text-[15px] font-medium text-ink-soft transition-colors hover:bg-bg-soft hover:text-ink active:bg-bg-soft"
               >
-                {link.label}
+                <span>{link.label}</span>
+                {link.label === "Pricing" && (
+                  <span className="rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-white">Coming Soon</span>
+                )}
               </a>
             </li>
           ))}

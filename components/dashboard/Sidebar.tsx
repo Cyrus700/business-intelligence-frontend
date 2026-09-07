@@ -95,17 +95,19 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       </nav>
 
       <div className="m-3 rounded-2xl bg-gradient-to-br from-primary to-[#8b5cf6] p-4 text-white shadow-lift">
-        <p className="text-sm font-semibold">Upgrade to Growth</p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-sm font-semibold">Upgrade to Growth</p>
+          <span className="shrink-0 rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-amber-900">
+            Coming Soon
+          </span>
+        </div>
         <p className="mt-1 text-xs text-white/80">
           Unlock unlimited sources, forecasting & alerts.
         </p>
-        <Link
-          href={href("/dashboard/settings")}
-          onClick={onNavigate}
-          className="mt-3 inline-flex h-8 items-center rounded-lg bg-white px-3 text-xs font-medium text-primary transition-transform hover:-translate-y-0.5"
-        >
-          See plans
-        </Link>
+        <span className="mt-3 inline-flex h-8 items-center rounded-lg bg-white/90 px-3 text-xs font-medium text-ink-muted cursor-not-allowed">
+          See plans — Coming Soon
+        </span>
+        <p className="mt-2 text-[10px] font-medium uppercase tracking-widest text-amber-200">Plans & Membership — Coming Soon</p>
       </div>
 
       <div className="shrink-0 border-t border-border px-6 py-4">
