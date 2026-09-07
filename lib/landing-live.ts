@@ -26,8 +26,16 @@ export type PlatformSnapshot = {
 
 // Server-side calls can take a private/in-cluster address; the browser bundle
 // never reads API_URL, so it may differ from NEXT_PUBLIC_API_URL.
-const BASE =
-  process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+function resolveBase(): string {
+  const raw = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL;
+  if (raw) {
+    if (raw.includes("3.231.206.229")) return "https://api.insightflowai.tech/api/v1";
+    return raw;
+  }
+  if (process.env.NODE_ENV === "production") return "https://api.insightflowai.tech/api/v1";
+  return "http://localhost:8000/api/v1";
+}
+const BASE = resolveBase();
 
 /** Seconds the rendered page may reuse a snapshot — matches the API's own TTL. */
 export const LIVE_REVALIDATE = 60;

@@ -157,7 +157,12 @@ async function downloadWithName(report: ReportOut, customName?: string) {
     try { return (typeof window !== "undefined" && localStorage.getItem("token")) || ""; } catch { return ""; }
   })();
   // Use the central helper but override filename client-side: fetch blob then save with custom name
-  const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+  const rawBase = process.env.NEXT_PUBLIC_API_URL;
+  let base = rawBase ?? "http://localhost:8000/api/v1";
+  if (rawBase && rawBase.includes("3.231.206.229")) base = "https://api.insightflowai.tech/api/v1";
+  else if (!rawBase && typeof window !== "undefined" && window.location.hostname.endsWith("insightflowai.tech")) {
+    base = window.location.hostname === "www.insightflowai.tech" ? `${window.location.origin}/api/v1` : "https://api.insightflowai.tech/api/v1";
+  } else if (!rawBase && process.env.NODE_ENV === "production") base = "https://api.insightflowai.tech/api/v1";
   // Try to get token via imported getToken if available (fallback to fetch with header from downloadReport logic)
   // We will reuse downloadReport's token handling by directly calling it with fetch and custom filename logic
   // Simpler: call downloadReport then rename? Instead, reimplement here to allow custom name.

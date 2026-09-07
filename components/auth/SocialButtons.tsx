@@ -1,4 +1,21 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+function resolveApiUrl(): string {
+  const raw = process.env.NEXT_PUBLIC_API_URL;
+  if (raw) {
+    if (raw.includes("3.231.206.229")) return "https://api.insightflowai.tech/api/v1";
+    if (typeof window !== "undefined" && window.location.protocol === "https:" && raw.startsWith("http://")) {
+      return raw.replace("http://", "https://");
+    }
+    return raw;
+  }
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    if (host === "www.insightflowai.tech" || host === "insightflowai.tech") return `${window.location.origin}/api/v1`;
+    if (host.endsWith("insightflowai.tech")) return "https://api.insightflowai.tech/api/v1";
+  }
+  if (process.env.NODE_ENV === "production") return "https://api.insightflowai.tech/api/v1";
+  return "http://localhost:8000/api/v1";
+}
+const API_URL = resolveApiUrl();
 
 export default function SocialButtons({ next = "" }: { next?: string }) {
   // Preserve validated post-login destination through the OAuth state hop.

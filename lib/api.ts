@@ -5,7 +5,30 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { getToken } from "@/lib/auth";
 
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+function resolveBase(): string {
+  const raw = process.env.NEXT_PUBLIC_API_URL;
+  if (raw) {
+    // Fix stale IP left in old GH builds (3.231.206.229) → new domain
+    if (raw.includes("3.231.206.229")) return "https://api.insightflowai.tech/api/v1";
+    // Mixed-content: page is https but API is http → upgrade
+    if (typeof window !== "undefined" && window.location.protocol === "https:" && raw.startsWith("http://")) {
+      return raw.replace("http://", "https://");
+    }
+    return raw;
+  }
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    // On the prod domain, prefer same-origin via nginx (no CORS, no extra DNS)
+    if (host === "www.insightflowai.tech" || host === "insightflowai.tech") {
+      return `${window.location.origin}/api/v1`;
+    }
+    if (host.endsWith("insightflowai.tech")) return "https://api.insightflowai.tech/api/v1";
+  }
+  // SSR or no window — use prod domain in production, localhost otherwise
+  if (process.env.NODE_ENV === "production") return "https://api.insightflowai.tech/api/v1";
+  return "http://localhost:8000/api/v1";
+}
+const BASE = resolveBase();
 
 export class ApiError extends Error {
   constructor(
