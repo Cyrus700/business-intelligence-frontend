@@ -169,7 +169,11 @@ export function useMyAccess() {
   return useQuery<MyAccess>({
     queryKey: queryKeys.rbac.me(),
     queryFn: () => apiGet<MyAccess>("/rbac/me"),
-    staleTime: 60_000,
+    // Was 60s — every dashboard mount (useRole/useCan/usePermissions all call
+    // this) refetched /rbac/me, adding 3–4s of sequential DB work to every
+    // navigation. 5m matches the policy TTL and keeps UI gating instant.
+    staleTime: 5 * 60_000,
+    gcTime: 10 * 60_000,
   });
 }
 
