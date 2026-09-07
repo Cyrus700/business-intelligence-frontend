@@ -12,6 +12,7 @@ import Pagination from "@/components/ui/Pagination";
 import { clsx } from "@/lib/cx";
 import { ErrorBoundary } from "@/lib/error-boundary";
 import { useRole, hasMinRole, useDashboardBase } from "@/lib/use-role";
+import { useAuth } from "@/lib/auth-context";
 import { apiGet, apiPost, apiPatch, queryKeys } from "@/lib/api";
 import type { UserProfile, UserCreateBody, UserUpdateBody, PaginatedUsers } from "@/lib/api";
 import InvitePanel from "@/components/dashboard/InvitePanel";
@@ -47,6 +48,8 @@ function UserModal({
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
+  const { user: currentUser } = useAuth();
+  const isSelf = !!(user && currentUser && user.id === currentUser.id);
   const [email, setEmail] = useState(user?.email ?? "");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState(user?.full_name ?? "");
@@ -88,6 +91,10 @@ function UserModal({
         department: department || null,
       });
     } else if (user) {
+      if (isSelf && isActive === false && user.is_active) {
+        setError("You cannot deactivate your own account.");
+        return;
+      }
       const body: UserUpdateBody = {};
       if (fullName !== (user.full_name ?? "")) body.full_name = fullName || null;
       if (role !== user.role) body.role = role as UserUpdateBody["role"];
@@ -163,14 +170,16 @@ function UserModal({
           </label>
 
           {!isCreate && (
-            <label className="flex cursor-pointer items-center gap-3 sm:col-span-2">
+            <label className={`flex items-center gap-3 sm:col-span-2 ${isSelf ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
               <input
                 type="checkbox"
                 checked={isActive}
+                disabled={isSelf}
+                title={isSelf ? "You cannot deactivate your own account" : undefined}
                 onChange={(e) => setIsActive(e.target.checked)}
-                className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                className="h-4 w-4 rounded border-border text-primary focus:ring-primary disabled:opacity-50"
               />
-              <span className="text-sm font-medium text-ink">Active</span>
+              <span className="text-sm font-medium text-ink">Active {isSelf && <span className="text-xs font-normal text-ink-muted">(you — cannot deactivate yourself)</span>}</span>
             </label>
           )}
         </div>
@@ -204,6 +213,8 @@ function DeleteConfirm({
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
+  const { user: currentUser } = useAuth();
+  const isSelf = currentUser?.id === user.id;
   const [error, setError] = useState<string | null>(null);
 
   const deactivateMutation = useMutation({
@@ -223,6 +234,11 @@ function DeleteConfirm({
           Are you sure you want to deactivate <strong>{user.email}</strong>? They will lose access
           to the dashboard immediately.
         </p>
+        {isSelf && (
+          <div className="mt-3 rounded-xl bg-warn-50 px-4 py-3 text-sm text-warn">
+            You cannot deactivate your own account.
+          </div>
+        )}
         {error && (
           <div className="mt-3 rounded-xl bg-warn-50 px-4 py-3 text-sm text-warn">{error}</div>
         )}
@@ -237,8 +253,9 @@ function DeleteConfirm({
           <button
             type="button"
             onClick={() => deactivateMutation.mutate(user.id)}
-            disabled={deactivateMutation.isPending}
-            className="inline-flex h-10 items-center rounded-xl bg-warn px-4 text-sm font-medium text-white shadow-lift hover:bg-red-600 disabled:opacity-50"
+            disabled={deactivateMutation.isPending || isSelf}
+            title={isSelf ? "You cannot deactivate your own account" : undefined}
+            className="inline-flex h-10 items-center rounded-xl bg-warn px-4 text-sm font-medium text-white shadow-lift hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {deactivateMutation.isPending ? "Deactivating..." : "Deactivate"}
           </button>
@@ -249,6 +266,7 @@ function DeleteConfirm({
 }
 
 function UsersTable() {
+  const { user: currentUser } = useAuth();
   const [modal, setModal] = useState<ModalMode>(null);
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
   const [deletingUser, setDeletingUser] = useState<UserProfile | null>(null);
@@ -400,7 +418,7 @@ function UsersTable() {
                           >
                             Edit
                           </button>
-                          {u.is_active && (
+                          {u.is_active && u.id !== currentUser?.id && (
                             <button
                               onClick={() => setDeletingUser(u)}
                               type="button"
@@ -408,6 +426,11 @@ function UsersTable() {
                             >
                               Deactivate
                             </button>
+                          )}
+                          {u.is_active && u.id === currentUser?.id && (
+                            <span className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-ink-muted" title="You cannot deactivate your own account">
+                              You
+                            </span>
                           )}
                         </div>
                       </td>

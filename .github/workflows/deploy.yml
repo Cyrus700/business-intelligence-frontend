@@ -18,6 +18,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - name: Free disk space (fix no space left on device)
+        run: |
+          df -h
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghc /opt/hostedtoolcache/CodeQL || true
+          sudo docker system prune -af --volumes 2>&1 | tail -5 || true
+          df -h
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
