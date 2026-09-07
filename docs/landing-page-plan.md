@@ -2,7 +2,7 @@
 
 ## Context
 
-The repo (`frontend/business-intelligence`) is a clean Next.js 16 / React 19 / Tailwind v4 scaffold (`bun` lockfile) with only the default `create-next-app` page. The FYP product is an **AI-Driven Cloud-Based Business Intelligence & Decision Support Dashboard** targeting SMEs (esp. Nepal): real-time dashboards, predictive analytics, anomaly detection, RBAC, AWS/Supabase, Chart.js/Recharts.
+The repo (`frontend/business-intelligence`) is a clean Next.js 16 / React 19 / Tailwind v4 scaffold (`bun` lockfile) with only the default `create-next-app` page. The FYP product is an **AI-Driven Cloud-Based Business Intelligence & Decision Support Dashboard** targeting SMEs (esp. Nepal): real-time dashboards, predictive analytics, anomaly detection, RBAC, AWS/Postgres, Chart.js/Recharts.
 
 **Priority:** build the public **landing page** first — enterprise-grade, premium product feel, heavy on visuals and motion. No backend wiring yet; this is the marketing front door.
 
@@ -78,7 +78,7 @@ Order (single scroll story):
 │   Predict · Detect · Recommend — explained for non-experts   │
 │   + "explainable AI" callout (trust concern from report)     │
 ├─ 8. INTEGRATIONS STRIP ─────────────────────────────────────┤
-│   CSV · Excel · PostgreSQL · REST APIs · Supabase · AWS      │
+│   CSV · Excel · PostgreSQL · REST APIs · Postgres · AWS      │
 │   (orbiting/animated source chips → central hub)             │
 ├─ 9. COMPARISON TABLE (from report Table 1) ─────────────────┤
 │   Feature | Power BI | Tableau | Looker | ★ Our System       │

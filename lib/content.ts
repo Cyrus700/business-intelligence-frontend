@@ -97,7 +97,7 @@ export const SECURITY = [
   { title: "TLS everywhere", body: "Every request between client and API is encrypted in transit." },
   { title: "JWT authentication", body: "Short-lived, time-bound tokens minimise session-hijack risk." },
   { title: "AES-256 at rest", body: "All stored data is encrypted, useless to anyone without keys." },
-  { title: "Row-level security", body: "Supabase RLS enforces access at the database row, by role." },
+  { title: "Row-level security", body: "Postgres RLS enforces access at the database row, by role." },
 ];
 
 export const PRICING = [
