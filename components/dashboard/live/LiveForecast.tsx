@@ -41,7 +41,8 @@ export default function LiveForecast({ horizon = 30 }: { horizon?: number }) {
     to: isoDaysAgo(0),
   });
 
-  if (forecast.error) return <PanelError message={forecast.error} />;
+  if (forecast.error) return <PanelError error={forecast.errorObj} onRetry={() => forecast.refetch()} />;
+  if (actuals.error) return <PanelError error={actuals.errorObj} onRetry={() => actuals.refetch()} />;
   if (forecast.loading || !forecast.data || actuals.loading)
     return <PanelSkeleton className="h-[320px]" />;
   if (forecast.data.points.length === 0) return <EmptyState label="No forecast yet — retrain" />;

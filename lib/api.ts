@@ -34,9 +34,70 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
+    public retryAfter?: number,
   ) {
     super(message);
+    this.name = "ApiError";
   }
+
+  get isRateLimited() {
+    return this.status === 429;
+  }
+  get isAuth() {
+    return this.status === 401 || this.status === 403;
+  }
+  get isNotFound() {
+    return this.status === 404;
+  }
+  get isServer() {
+    return this.status >= 500;
+  }
+}
+
+function friendlyMessage(status: number, detail?: string): string {
+  if (detail && detail.trim() && detail !== "undefined" && detail !== "null") {
+    // Use server detail if it already sounds user-friendly
+    if (detail.length < 200) return detail;
+  }
+  switch (status) {
+    case 429:
+      return "Too many requests — dashboard is busy. Please wait a moment and retry.";
+    case 401:
+      return "Session expired. Please sign in again.";
+    case 403:
+      return "You don’t have permission to view this.";
+    case 404:
+      return "Data not found for this period.";
+    case 408:
+      return "Request timed out. Please retry.";
+    case 502:
+    case 503:
+    case 504:
+      return "Server is temporarily unavailable. Retrying…";
+    default:
+      if (status >= 500) return "Server error. Please retry in a moment.";
+      if (status === 0) return "Network error. Check your connection.";
+      return detail || "Request failed. Please retry.";
+  }
+}
+
+async function parseErrorBody(res: Response): Promise<string> {
+  const raw = await res.text().catch(() => "");
+  if (!raw) return res.statusText || "";
+  // Try JSON first (FastAPI / nginx JSON 429)
+  try {
+    const j = JSON.parse(raw);
+    if (j?.detail) return String(j.detail);
+    if (j?.message) return String(j.message);
+  } catch {
+    // raw is HTML (old nginx text/html 429) — detect and map to friendly
+    if (raw.trim().startsWith("<") && raw.includes("429")) {
+      return "Too many requests — dashboard is busy. Please wait a moment and retry.";
+    }
+    // If raw is short text, use it
+    if (raw.length < 300) return raw.trim();
+  }
+  return res.statusText || raw.slice(0, 200);
 }
 
 // ── Query key factory ────────────────────────────────────────────
@@ -118,8 +179,11 @@ export async function apiGet<T>(
     const headers = await authHeaders();
     const res = await fetch(url, { headers, signal });
     if (!res.ok) {
-      const body = await res.json().catch(() => ({ detail: res.statusText }));
-      throw new ApiError(res.status, String(body.detail ?? res.statusText));
+      const retryAfterRaw = res.headers.get("retry-after");
+      const retryAfter = retryAfterRaw ? parseInt(retryAfterRaw, 10) : undefined;
+      const detail = await parseErrorBody(res);
+      const msg = friendlyMessage(res.status, detail);
+      throw new ApiError(res.status, msg, Number.isFinite(retryAfter as number) ? retryAfter : undefined);
     }
     return res.json() as Promise<T>;
   };
@@ -149,8 +213,9 @@ export async function apiPost<T>(path: string, body: unknown): Promise<T> {
     body: JSON.stringify(body),
   });
   if (!res.ok) {
-    const b = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new ApiError(res.status, String(b.detail ?? res.statusText));
+    const retryAfter = parseInt(res.headers.get("retry-after") || "", 10);
+    const detail = await parseErrorBody(res);
+    throw new ApiError(res.status, friendlyMessage(res.status, detail), Number.isFinite(retryAfter) ? retryAfter : undefined);
   }
   return res.json() as Promise<T>;
 }
@@ -163,8 +228,9 @@ export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
     body: JSON.stringify(body),
   });
   if (!res.ok) {
-    const b = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new ApiError(res.status, String(b.detail ?? res.statusText));
+    const retryAfter = parseInt(res.headers.get("retry-after") || "", 10);
+    const detail = await parseErrorBody(res);
+    throw new ApiError(res.status, friendlyMessage(res.status, detail), Number.isFinite(retryAfter) ? retryAfter : undefined);
   }
   return res.json() as Promise<T>;
 }
@@ -177,8 +243,9 @@ export async function apiPut<T>(path: string, body: unknown): Promise<T> {
     body: JSON.stringify(body),
   });
   if (!res.ok) {
-    const b = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new ApiError(res.status, String(b.detail ?? res.statusText));
+    const retryAfter = parseInt(res.headers.get("retry-after") || "", 10);
+    const detail = await parseErrorBody(res);
+    throw new ApiError(res.status, friendlyMessage(res.status, detail), Number.isFinite(retryAfter) ? retryAfter : undefined);
   }
   return res.json() as Promise<T>;
 }
@@ -188,8 +255,9 @@ export async function apiDelete(path: string): Promise<void> {
   const headers = await authHeaders();
   const res = await fetch(`${BASE}${path}`, { method: "DELETE", headers });
   if (!res.ok) {
-    const b = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new ApiError(res.status, String(b.detail ?? res.statusText));
+    const retryAfter = parseInt(res.headers.get("retry-after") || "", 10);
+    const detail = await parseErrorBody(res);
+    throw new ApiError(res.status, friendlyMessage(res.status, detail), Number.isFinite(retryAfter) ? retryAfter : undefined);
   }
 }
 
@@ -221,7 +289,7 @@ export function useApi<T>(
   // differently-ordered or partly-empty param objects now hit one cache entry
   // instead of firing one request each.
   const key = queryKey ?? [path, normalizeParams(params)];
-  const { data, error, isLoading, isFetching } = useQuery<T>({
+  const { data, error, isLoading, isFetching, refetch, isError } = useQuery<T>({
     queryKey: key,
     queryFn: ({ signal }) => apiGet<T>(path, params, signal),
     staleTime: options?.staleTime,
@@ -232,18 +300,31 @@ export function useApi<T>(
     // changing the date filter doesn't blank every panel into a skeleton.
     placeholderData: keepPreviousData,
     retry: (failureCount, err) => {
+      if (err instanceof ApiError && err.status === 429) return failureCount < 2;
+      if (err instanceof ApiError && err.status >= 500) return failureCount < 2;
       if (failureCount >= maxRetries) return false;
       if (err instanceof ApiError && err.status < 500) return false;
       return true;
     },
+    retryDelay: (attempt, err) => {
+      if (err instanceof ApiError && err.retryAfter) return err.retryAfter * 1000;
+      if (err instanceof ApiError && err.status === 429) return Math.min(2000 * (attempt + 1), 15000);
+      return Math.min(1000 * 2 ** attempt, 15000);
+    },
   });
+
+  const apiErr = error instanceof ApiError ? error : error ? new ApiError(0, String((error as Error).message || "Request failed")) : null;
 
   return {
     data: data ?? null,
-    error: error ? (error instanceof ApiError ? error.message : "Request failed") : null,
+    error: apiErr ? apiErr.message : null,
+    /** Rich error object for status-aware UI (429 countdown, auth, etc.) */
+    errorObj: apiErr,
     loading: isLoading,
     /** True during background refreshes too — for subtle "updating" affordances. */
     fetching: isFetching,
+    isError,
+    refetch,
   };
 }
 
@@ -457,8 +538,9 @@ export async function aiChatStream(
     signal,
   });
   if (!res.ok) {
-    const b = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new ApiError(res.status, String(b.detail ?? res.statusText));
+    const retryAfter = parseInt(res.headers.get("retry-after") || "", 10);
+    const detail = await parseErrorBody(res);
+    throw new ApiError(res.status, friendlyMessage(res.status, detail), Number.isFinite(retryAfter) ? retryAfter : undefined);
   }
   if (!res.body) throw new ApiError(0, "Streaming not supported by this browser");
 

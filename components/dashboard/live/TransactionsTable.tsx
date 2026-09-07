@@ -62,9 +62,9 @@ export default function TransactionsTable({
     sort_dir: sortDir,
   };
   if (search) params.search = search;
-  const { data, error, loading } = useApi<Paginated<TransactionRow>>("/sales/transactions", params);
+  const { data, error, errorObj, loading, refetch } = useApi<Paginated<TransactionRow>>("/sales/transactions", params);
 
-  if (error) return <PanelError message={error} />;
+  if (error) return <PanelError error={errorObj} onRetry={() => refetch()} />;
   if (loading || !data) return <PanelSkeleton className="h-64" />;
   if (data.items.length === 0) return <EmptyState />;
 

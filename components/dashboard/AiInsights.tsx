@@ -16,7 +16,7 @@ export default function AiInsights({ scope = "dashboard" }: { scope?: string }) 
   // Insights are derived from the same 30-day window the rest of the page
   // reads, and are expensive to generate server-side — so they are cached for
   // 10 minutes rather than regenerated on every mount.
-  const { data, error, loading } = useApi<AIInsight[]>(
+  const { data, error, errorObj, loading, refetch } = useApi<AIInsight[]>(
     "/ai/insights",
     { scope },
     undefined,
@@ -35,8 +35,19 @@ export default function AiInsights({ scope = "dashboard" }: { scope?: string }) 
   }
 
   if (error) {
+    const isRateLimited = (errorObj as any)?.status === 429;
     return (
-      <div className="rounded-xl bg-warn-50 px-4 py-3 text-sm text-warn">{error}</div>
+      <div className="rounded-xl border border-warn/30 bg-warn-50 p-4 text-sm text-warn">
+        <p className="font-medium">{isRateLimited ? "Dashboard is busy" : "Couldn’t load insights"}</p>
+        <p className="mt-1 opacity-80">{error}</p>
+        <button
+          type="button"
+          onClick={() => refetch()}
+          className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-warn/20 bg-white px-3 py-1.5 text-xs font-medium text-warn shadow-sm hover:bg-white/90"
+        >
+          Retry
+        </button>
+      </div>
     );
   }
 

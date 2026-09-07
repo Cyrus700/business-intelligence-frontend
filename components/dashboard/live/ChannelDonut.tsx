@@ -14,12 +14,12 @@ const LABELS: Record<string, string> = {
 
 export default function ChannelDonut() {
   const { filters, addMultiDimension, removeMultiDimension } = useFilters();
-  const { data, error, loading } = useApi<DimensionRow[]>(
+  const { data, error, errorObj, loading, refetch } = useApi<DimensionRow[]>(
     "/sales/by-channel",
     apiParams(filters),
   );
 
-  if (error) return <PanelError message={error} />;
+  if (error) return <PanelError error={errorObj} onRetry={() => refetch()} />;
   if (loading || !data) return <PanelSkeleton className="h-[200px]" />;
   if (data.length === 0) return <EmptyState />;
 

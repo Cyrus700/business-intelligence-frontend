@@ -22,7 +22,8 @@ export default function RevenueExpenses() {
     granularity,
   });
 
-  if (revenue.error) return <PanelError message={revenue.error} />;
+  if (revenue.error) return <PanelError error={revenue.errorObj} onRetry={() => revenue.refetch()} />;
+  if (expenses.error) return <PanelError error={expenses.errorObj} onRetry={() => expenses.refetch()} />;
   if (revenue.loading || !revenue.data) return <PanelSkeleton className="h-[300px]" />;
   if (revenue.data.points.length === 0) return <EmptyState />;
 

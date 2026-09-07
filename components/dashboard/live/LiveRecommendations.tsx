@@ -22,13 +22,16 @@ const SEV_DOT: Record<string, { dot: string; label: string }> = {
 
 export default function LiveRecommendations({ limit = 4 }: { limit?: number }) {
   const base = useDashboardBase();
-  const { data, isLoading, error } = useQuery<Recommendation[]>({
+  const { data, isLoading, error, refetch } = useQuery<Recommendation[]>({
     queryKey: queryKeys.recommendations.list(),
     queryFn: () => apiGet<Recommendation[]>("/recommendations"),
     staleTime: 120_000,
   });
 
-  if (error) return <PanelError message="Failed to load recommendations" />;
+  if (error) {
+    const apiErr = error as import("@/lib/api").ApiError;
+    return <PanelError error={apiErr} onRetry={() => refetch()} />;
+  }
   if (isLoading || !data) return <PanelSkeleton className="h-48" />;
 
   const items = data.slice(0, limit);

@@ -67,19 +67,21 @@ function DimensionBlock({ dim, d }: { dim: string; d: DiagnosisDimension }) {
 function useDiagnosis(metric: MetricId): {
   data: Diagnosis | null;
   error: string | null;
+  errorObj: import("@/lib/api").ApiError | null;
   loading: boolean;
+  refetch: () => void;
 } {
   const { filters } = useFilters();
   const params = apiParams(filters) as Record<string, string | undefined>;
   params.metric = metric;
   params.dimensions = "region,channel,product";
-  const { data, error, loading } = useApi<Diagnosis>("/diagnostics/change", params);
-  return { data, error: error ? String(error) : null, loading };
+  const { data, error, errorObj, loading, refetch } = useApi<Diagnosis>("/diagnostics/change", params);
+  return { data, error: error ? String(error) : null, errorObj, loading, refetch };
 }
 
 export default function DiagnosticsPanel() {
   const [metric, setMetric] = useState<MetricId>("revenue");
-  const { data, error, loading } = useDiagnosis(metric);
+  const { data, error, errorObj, loading, refetch } = useDiagnosis(metric);
 
   const dims = useMemo(
     () => (data ? Object.entries(data.dimensions) : []),
@@ -105,7 +107,13 @@ export default function DiagnosticsPanel() {
       </div>
 
       {loading && <div className="h-24 animate-pulse rounded-xl bg-bg-soft" />}
-      {error && <p className="text-sm text-warn">{error}</p>}
+      {error && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          <p className="font-medium">Couldn’t load analysis</p>
+          <p className="mt-1 opacity-80">{error}</p>
+          <button onClick={() => refetch()} className="mt-2 rounded-lg bg-white px-3 py-1 text-xs font-medium shadow">Retry</button>
+        </div>
+      )}
 
       {data && (
         <>

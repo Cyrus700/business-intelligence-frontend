@@ -33,7 +33,7 @@ export default function KpiRow() {
     granularity,
   });
 
-  if (summary.error) return <PanelError message={summary.error} />;
+  if (summary.error) return <PanelError error={summary.errorObj} onRetry={() => summary.refetch()} />;
   if (summary.loading || !summary.data) return <PanelSkeleton className="h-36" />;
 
   const byMetric = Object.fromEntries(summary.data.cards.map((c) => [c.metric, c]));

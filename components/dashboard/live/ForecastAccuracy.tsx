@@ -19,9 +19,9 @@ type AccuracyRow = {
 };
 
 export default function ForecastAccuracy() {
-  const { data, error, loading } = useApi<AccuracyRow[]>("/forecasts/accuracy");
+  const { data, error, errorObj, loading, refetch } = useApi<AccuracyRow[]>("/forecasts/accuracy");
 
-  if (error) return <PanelError message={error} />;
+  if (error) return <PanelError error={errorObj} onRetry={() => refetch()} />;
   if (loading || !data) return <PanelSkeleton className="h-48" />;
   if (data.length === 0) {
     return <div className="py-6 text-center text-sm text-ink-muted">No models trained yet.</div>;

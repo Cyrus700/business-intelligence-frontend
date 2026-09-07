@@ -5,11 +5,11 @@ import type { InventoryRow } from "@/lib/api";
 import { EmptyState, PanelError, PanelSkeleton } from "./Status";
 
 export default function LowStock() {
-  const { data, error, loading } = useApi<InventoryRow[]>("/inventory/levels", {
+  const { data, error, errorObj, loading, refetch } = useApi<InventoryRow[]>("/inventory/levels", {
     below_reorder: true,
   });
 
-  if (error) return <PanelError message={error} />;
+  if (error) return <PanelError error={errorObj} onRetry={() => refetch()} />;
   if (loading || !data) return <PanelSkeleton className="h-40" />;
   if (data.length === 0) return <EmptyState label="All products above reorder level 🎉" />;
 

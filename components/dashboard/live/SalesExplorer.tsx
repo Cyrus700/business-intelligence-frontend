@@ -24,12 +24,12 @@ export default function SalesExplorer() {
     setSearch(v);
     setPage(1);
   }
-  const { data, error, loading } = useApi<DimensionRow[]>(
+  const { data, error, errorObj, loading, refetch } = useApi<DimensionRow[]>(
     "/sales/by-product",
     apiParams(filters),
   );
 
-  if (error) return <PanelError message={error} />;
+  if (error) return <PanelError error={errorObj} onRetry={() => refetch()} />;
   if (loading || !data) return <PanelSkeleton className="h-72" />;
   if (data.length === 0) return <EmptyState />;
 

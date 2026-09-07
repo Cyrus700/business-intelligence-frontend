@@ -21,8 +21,8 @@ import Badge from "@/components/ui/Badge";
 
 function PnLSummary() {
   const { filters } = useFilters();
-  const { data, error, loading } = useApi<PnlRow[]>("/finance/pnl", apiParams(filters));
-  if (error) return <ErrorState message="Failed to load P&L" details={error} size="sm" />;
+  const { data, error, errorObj, loading, refetch } = useApi<PnlRow[]>("/finance/pnl", apiParams(filters));
+  if (error) return <ErrorState message="Failed to load P&L" details={error} size="sm" onRetry={() => refetch()} />;
   if (loading) return <LoadingState message="Loading P&L…" size="md" />;
   if (!data || data.length === 0) return <EmptyState message="No P&L data" description="No data for selected period" size="sm" />;
   // /finance/pnl returns one row per calendar month within the selected range —

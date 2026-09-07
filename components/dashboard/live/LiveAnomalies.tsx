@@ -54,7 +54,7 @@ export default function LiveAnomalies({
   const queryClient = useQueryClient();
   const params = { status: manage ? undefined : "open", page_size: 50 };
 
-  const { data, error, loading } = useApi<Anomaly[]>("/anomalies", params);
+  const { data, error, errorObj, loading, refetch } = useApi<Anomaly[]>("/anomalies", params);
 
   const patchMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
@@ -64,7 +64,7 @@ export default function LiveAnomalies({
     },
   });
 
-  if (error) return <PanelError message={error} />;
+  if (error) return <PanelError error={errorObj} onRetry={() => refetch()} />;
   if (loading || !data) return <PanelSkeleton className="h-48" />;
   const items = data.slice(0, limit);
   if (items.length === 0) return <EmptyState label="No anomalies detected 🎉" />;

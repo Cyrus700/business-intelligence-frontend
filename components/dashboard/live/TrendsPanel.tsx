@@ -8,7 +8,7 @@
 import { nprCompact, useApi } from "@/lib/api";
 import type { TrendRow } from "@/lib/api";
 import Icon from "@/components/ui/Icon";
-import { PanelSkeleton } from "./Status";
+import { PanelError, PanelSkeleton } from "./Status";
 
 const METRICS: { key: "revenue" | "orders" | "expenses"; label: string; money: boolean }[] = [
   { key: "revenue", label: "Revenue", money: true },
@@ -43,17 +43,37 @@ function strengthLabel(r: number): string {
 }
 
 function TrendCard({ metric, label, money }: { metric: string; label: string; money: boolean }) {
-  const { data, error, loading } = useApi<TrendRow>("/trends", { metric, window_days: 90 });
+  const { data, error, errorObj, loading, refetch } = useApi<TrendRow>("/trends", { metric, window_days: 90 });
 
   if (loading) return <PanelSkeleton className="h-28" />;
 
-  if (error || !data) {
+  if (error) {
+    // Rate-limit / server errors get a retryable panel; genuine "no history"
+    // (404/empty) keeps the explanatory copy.
+    if (errorObj && (errorObj.status === 429 || errorObj.status >= 500)) {
+      return (
+        <div className="rounded-xl border border-border p-4">
+          <p className="text-sm font-medium text-ink">{label}</p>
+          <div className="mt-2">
+            <PanelError error={errorObj} onRetry={() => refetch()} />
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="rounded-xl border border-border p-4">
         <p className="text-sm font-medium text-ink">{label}</p>
         <p className="mt-2 text-xs text-ink-muted">
           Not enough history yet — a trend needs at least 14 days of data in this window.
         </p>
+      </div>
+    );
+  }
+  if (!data) {
+    return (
+      <div className="rounded-xl border border-border p-4">
+        <p className="text-sm font-medium text-ink">{label}</p>
+        <p className="mt-2 text-xs text-ink-muted">No trend data available.</p>
       </div>
     );
   }

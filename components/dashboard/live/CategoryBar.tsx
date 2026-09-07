@@ -8,12 +8,12 @@ import { EmptyState, PanelError, PanelSkeleton } from "./Status";
 
 export default function CategoryBar() {
   const { filters, addMultiDimension, removeMultiDimension } = useFilters();
-  const { data, error, loading } = useApi<DimensionRow[]>(
+  const { data, error, errorObj, loading, refetch } = useApi<DimensionRow[]>(
     "/sales/by-category",
     apiParams(filters),
   );
 
-  if (error) return <PanelError message={error} />;
+  if (error) return <PanelError error={errorObj} onRetry={() => refetch()} />;
   if (loading || !data) return <PanelSkeleton className="h-[280px]" />;
   if (data.length === 0) return <EmptyState />;
 
