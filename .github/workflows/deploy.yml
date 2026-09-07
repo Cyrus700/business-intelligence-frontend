@@ -138,9 +138,10 @@ jobs:
           else
             docker compose -f \$COMPOSE build frontend
           fi
-          docker compose -f \$COMPOSE up -d frontend
+          # --no-deps so an unhealthy api doesn't block frontend (api is managed by backend deploy)
+          docker compose -f \$COMPOSE up -d --no-deps frontend 2>&1 | tail -30
           sleep 5
-          curl -fsS http://127.0.0.1:3000/ | head -n 1 | grep -qi html && echo "frontend ok"
+          curl -fsS http://127.0.0.1:3000/ | head -n 1 | grep -qi html && echo "frontend ok" || (echo "frontend health failed, logs:"; docker compose -f \$COMPOSE logs frontend --tail 30 || true)
           docker image prune -f --filter "until=12h" 2>&1 | tail -10 || true
           docker builder prune -f --filter "until=24h" 2>&1 | tail -10 || true
           EOSSH
