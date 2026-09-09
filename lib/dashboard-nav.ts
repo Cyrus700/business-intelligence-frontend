@@ -22,7 +22,7 @@ export const DASH_NAV: NavItem[] = [
   { label: "Compare", href: "/dashboard/compare", icon: "columns", permission: "compare:view" },
   { label: "What-If", href: "/dashboard/what-if", icon: "activity", permission: "timeseries:view" },
   { label: "Reports", href: "/dashboard/reports", icon: "table", permission: "reports:view" },
-  { label: "Alerts", href: "/dashboard/alerts", icon: "bell", badge: "2", permission: "anomalies:view" },
+  { label: "Alerts", href: "/dashboard/alerts", icon: "bell", permission: "anomalies:view" },
   { label: "Recommendations", href: "/dashboard/recommendations", icon: "spark", permission: "insights:view" },
   { label: "ML Monitoring", href: "/dashboard/ml-monitoring", icon: "cpu", permission: "ml:monitor" },
   { label: "System Health", href: "/dashboard/system-health", icon: "activity", permission: "health:system", minRole: "admin" },

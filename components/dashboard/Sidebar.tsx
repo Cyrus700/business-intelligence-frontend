@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { clsx } from "@/lib/cx";
 import { BRAND } from "@/lib/content";
 import { DASH_NAV } from "@/lib/dashboard-nav";
@@ -10,6 +11,7 @@ import { useAuth } from "@/lib/auth-context";
 import { dashboardPath } from "@/lib/permissions";
 import Icon from "@/components/ui/Icon";
 import BrandLogo from "@/components/ui/BrandLogo";
+import { apiGet } from "@/lib/api";
 
 type IconName = Parameters<typeof Icon>[0]["name"];
 
@@ -40,6 +42,17 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       (!(item as any).superAdminOnly || isSuper),
   );
 
+  // AlertAgent: live badge for Alerts — shows open anomaly count (professional, not hardcoded 2)
+  const { data: alertBadge } = useQuery({
+    queryKey: ["sidebar", "alerts", "badge"],
+    queryFn: () => apiGet<unknown[]>("/anomalies", { status: "open", page_size: 50 }),
+    enabled: !!user && !!can["anomalies:view"],
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+  });
+  const alertsCount = Array.isArray(alertBadge) ? (alertBadge as unknown[]).length : 0;
+  const showAlertBadge = alertsCount > 0 ? (alertsCount > 99 ? "99+" : String(alertsCount)) : undefined;
+
   return (
     <div className="flex h-full flex-col overflow-y-auto bg-white">
       <div className="flex h-16 shrink-0 items-center px-6">
@@ -58,6 +71,7 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           const resolvedHref = href(item.href);
           const active =
             item.href === "/dashboard" ? pathname === base : pathname.startsWith(resolvedHref);
+          const badge = item.href === "/dashboard/alerts" ? showAlertBadge : item.badge;
           return (
             <Link
               key={item.href}
@@ -84,9 +98,9 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                 )}
               />
               {item.label}
-              {item.badge && (
+              {badge && (
                 <span className="ml-auto rounded-full bg-warn px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                  {item.badge}
+                  {badge}
                 </span>
               )}
             </Link>

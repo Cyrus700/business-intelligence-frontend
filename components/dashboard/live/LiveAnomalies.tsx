@@ -54,7 +54,7 @@ export default function LiveAnomalies({
   const queryClient = useQueryClient();
   const params = { status: manage ? undefined : "open", page_size: 50 };
 
-  const { data, error, errorObj, loading, refetch } = useApi<Anomaly[]>("/anomalies", params);
+  const { data, error, errorObj, loading, refetch } = useApi<Anomaly[]>("/anomalies", params, undefined, 1, { staleTime: 15_000, refetchInterval: 30_000 });
 
   const patchMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>

@@ -986,6 +986,30 @@ export type AlertRuleOut = {
 export async function getAlertRules(): Promise<AlertRuleOut[]> {
   return apiGet<AlertRuleOut[]>("/alert-rules");
 }
+export type AlertRuleIn = {
+  name: string;
+  metric: "revenue" | "orders" | "expense_total";
+  condition: "gt" | "lt" | "pct_change_gt" | "anomaly_detected";
+  threshold?: number | null;
+  window_days?: number;
+  channels?: Record<string, unknown>;
+  roles_notified?: string[];
+};
+export async function createAlertRule(body: AlertRuleIn): Promise<AlertRuleOut> {
+  return apiPost<AlertRuleOut>("/alert-rules", body);
+}
+export async function updateAlertRule(id: string, body: Partial<AlertRuleOut & { threshold: number | null; window_days: number; channels: Record<string, unknown>; roles_notified: string[]; is_active: boolean }>): Promise<AlertRuleOut> {
+  return apiPatch<AlertRuleOut>(`/alert-rules/${id}`, body);
+}
+export async function deleteAlertRule(id: string): Promise<void> {
+  return apiDelete(`/alert-rules/${id}`);
+}
+export async function testAlertRule(id: string): Promise<{ would_fire: boolean; message: string | null; window_start: string; window_end: string; current_value: number; previous_value: number | null; threshold: number | null }> {
+  return apiPost(`/alert-rules/${id}/test`, {});
+}
+export async function evaluateAlertRules(): Promise<{ notifications: number }> {
+  return apiPost<{ notifications: number }>("/alert-rules/evaluate", {});
+}
 
 // ── Notifications ────────────────────────────────────────────────
 
@@ -999,6 +1023,14 @@ export type NotificationOut = {
 
 export async function getNotifications(unread_only?: boolean): Promise<NotificationOut[]> {
   return apiGet<NotificationOut[]>("/notifications", { unread_only: unread_only ?? undefined });
+}
+export async function markNotificationRead(id: string): Promise<NotificationOut> {
+  return apiPatch<NotificationOut>(`/notifications/${id}/read`, {});
+}
+export async function markAllNotificationsRead(): Promise<void> {
+  // No dedicated endpoint — mark each unread one by one (professional fallback)
+  const unread = await getNotifications(true);
+  await Promise.all(unread.map((n) => markNotificationRead(n.id).catch(() => {})));
 }
 
 // ── Reports ──────────────────────────────────────────────────────

@@ -2,12 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { clsx } from "@/lib/cx";
 import { useAuth } from "@/lib/auth-context";
 import { useRole, useDashboardBase } from "@/lib/use-role";
 import { getRoleInfo, type Role } from "@/lib/permissions";
 import Icon from "@/components/ui/Icon";
-import { useOrganizations } from "@/lib/api";
+import { useOrganizations, getNotifications, markNotificationRead } from "@/lib/api";
 
 const ROLE_BADGE: Record<Role, string> = {
   analyst: "bg-green-100 text-green-700",
@@ -46,6 +47,26 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
   const { data: orgs } = useOrganizations(!!user);
   const businessName = orgs?.[0]?.name ?? null;
   const isSuper = !!user?.is_super_admin;
+  const queryClient = useQueryClient();
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
+  const { data: notifications } = useQuery({
+    queryKey: ["notifications", "topbar"],
+    queryFn: () => getNotifications(true),
+    enabled: !!user,
+    staleTime: 15_000,
+    refetchInterval: 30_000,
+  });
+  const unreadCount = (notifications ?? []).filter((n: any) => !n.is_read).length;
+  const unread = (notifications ?? []).slice(0, 5);
+
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) setNotifOpen(false);
+    };
+    if (notifOpen) document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [notifOpen]);
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-white/80 px-4 backdrop-blur-xl sm:px-6">
@@ -89,14 +110,71 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
           </span>
         )}
 
-        <button
-          type="button"
-          aria-label="Notifications"
-          className="relative grid h-10 w-10 place-items-center rounded-lg text-ink-soft transition-colors hover:bg-bg-soft hover:text-ink"
-        >
-          <Icon name="bell" className="h-5 w-5" />
-          <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-warn ring-2 ring-white" />
-        </button>
+        <div ref={notifRef} className="relative">
+          <button
+            type="button"
+            aria-label="Notifications"
+            aria-expanded={notifOpen}
+            aria-haspopup="true"
+            onClick={() => setNotifOpen((v) => !v)}
+            className="relative grid h-10 w-10 place-items-center rounded-lg text-ink-soft transition-colors hover:bg-bg-soft hover:text-ink"
+          >
+            <Icon name="bell" className="h-5 w-5" />
+            {unreadCount > 0 ? (
+              <span className="absolute right-1.5 top-1.5 grid h-4 min-w-[16px] place-items-center rounded-full bg-warn px-1 text-[10px] font-bold text-white ring-2 ring-white">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            ) : (
+              <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white" />
+            )}
+          </button>
+          {notifOpen && (
+            <div className="absolute right-0 top-full z-40 mt-2 w-80 rounded-xl border border-border bg-white shadow-xl">
+              <div className="flex items-center justify-between border-b border-border px-4 py-3">
+                <p className="text-sm font-semibold text-ink">Notifications</p>
+                <span className="text-xs text-ink-muted">{unreadCount} unread</span>
+              </div>
+              {unread.length === 0 ? (
+                <p className="p-6 text-center text-sm text-ink-muted">All caught up — no unread alerts 🎉</p>
+              ) : (
+                <ul className="max-h-80 overflow-auto">
+                  {unread.map((n: any) => (
+                    <li key={n.id} className="border-b border-border/60 px-4 py-3 hover:bg-bg-soft/50">
+                      <p className="text-sm font-medium text-ink">{n.title}</p>
+                      {n.body && <p className="mt-0.5 line-clamp-2 text-xs text-ink-soft">{n.body}</p>}
+                      <div className="mt-1.5 flex items-center justify-between">
+                        <span className="text-[11px] text-ink-muted">{new Date(n.created_at).toLocaleString()}</span>
+                        <button
+                          onClick={async () => {
+                            await markNotificationRead(n.id);
+                            queryClient.invalidateQueries({ queryKey: ["notifications"] });
+                          }}
+                          className="text-xs font-medium text-primary hover:underline"
+                        >
+                          Mark read
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="flex gap-2 border-t border-border p-2">
+                <button
+                  onClick={() => {
+                    setNotifOpen(false);
+                    router.push(`${base}/alerts`);
+                  }}
+                  className="flex-1 rounded-lg bg-primary px-3 py-2 text-xs font-medium text-white hover:bg-primary-600"
+                >
+                  View all alerts
+                </button>
+                <button onClick={() => setNotifOpen(false)} className="rounded-lg border border-border px-3 py-2 text-xs hover:bg-bg-soft">
+                  Close
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
 
         <div ref={ref} className="relative">
           <button
