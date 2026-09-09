@@ -289,16 +289,33 @@ export default function UploadPanel({ canManage }: { canManage: boolean }) {
     setClientError(null);
     setServerError(null);
     setAutoNote(null);
-    // Use backend inspect first, fall back to no inspect if it fails (offline)
+    // Business-easy: backend agents explain the file in plain English
     inspectFile(file)
       .then((res) => {
         if (cancelled) return;
         setInspect(res);
         setInspecting(false);
-        // Auto-select domain if backend is confident
+        // Prefer business_summary from the multi-agent backend, fallback to old confidence text
+        const busSummary = (res as unknown as { business_summary?: string }).business_summary;
+        const intel = (res as unknown as { intel?: { headline: string; body: string } }).intel;
         const sug = res.detected?.suggested;
         const conf = res.detected?.confidence ?? 0;
-        if (sug && conf >= 0.6) {
+        const headline = intel?.headline || busSummary;
+        if (headline) {
+          // Use business-friendly headline from DomainIntelligenceAgent
+          if (sug && conf >= 0.6) {
+            setDomain((prev) => {
+              if (prev !== sug) {
+                setAutoNote(`${headline} — ${intel?.body ?? ""} Auto-selected. You can change below.`.trim());
+                return sug;
+              }
+              setAutoNote(`${headline} — ${intel?.body ?? ""}`.trim());
+              return prev;
+            });
+          } else {
+            setAutoNote(`${headline} — ${intel?.body ?? ""}`.trim());
+          }
+        } else if (sug && conf >= 0.6) {
           setDomain((prev) => {
             if (prev !== sug) {
               const label = DOMAIN_LABEL[sug] ?? sug;
@@ -312,6 +329,10 @@ export default function UploadPanel({ canManage }: { canManage: boolean }) {
           setAutoNote(`Looks like ${DOMAIN_LABEL[sug] ?? sug} (${Math.round(conf * 100)}% match) — please confirm the domain below.`);
         } else {
           setAutoNote("Could not confidently detect domain — please select the correct one below.");
+        }
+        // Surface quality hints in console for business ease (also shown in column section)
+        if ((res as unknown as { quality_hints?: string[] }).quality_hints?.length) {
+          console.debug("Quality hints:", (res as unknown as { quality_hints?: string[] }).quality_hints);
         }
       })
       .catch((e) => {

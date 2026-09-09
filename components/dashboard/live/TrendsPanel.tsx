@@ -8,6 +8,7 @@
 import { nprCompact, useApi } from "@/lib/api";
 import type { TrendRow } from "@/lib/api";
 import Icon from "@/components/ui/Icon";
+import { useFilters } from "@/lib/filters";
 import { PanelError, PanelSkeleton } from "./Status";
 
 const METRICS: { key: "revenue" | "orders" | "expenses"; label: string; money: boolean }[] = [
@@ -43,7 +44,11 @@ function strengthLabel(r: number): string {
 }
 
 function TrendCard({ metric, label, money }: { metric: string; label: string; money: boolean }) {
-  const { data, error, errorObj, loading, refetch } = useApi<TrendRow>("/trends", { metric, window_days: 90 });
+  // Business ease: trend window now follows the selected time filter (7D/30D/90D/1Y)
+  // so switching from 7 days to 1 year actually recomputes the trend.
+  const { filters } = useFilters();
+  const window_days = filters.range === "1d" ? 7 : filters.range === "7d" ? 7 : filters.range === "30d" ? 30 : filters.range === "90d" ? 90 : filters.range === "1y" ? 90 : 90;
+  const { data, error, errorObj, loading, refetch } = useApi<TrendRow>("/trends", { metric, window_days });
 
   if (loading) return <PanelSkeleton className="h-28" />;
 

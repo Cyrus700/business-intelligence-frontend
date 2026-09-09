@@ -66,9 +66,10 @@ export default function ExecutiveClient() {
     staleTime: 60_000,
   });
 
+  const kpiParams = apiParams(filters);
   const { data: kpiSummary } = useQuery<{ period_start: string; period_end: string; cards: Array<{ metric: string; value: number; change_pct: number | null; achievement_pct?: number | null; status?: string }> }>({
-    queryKey: ["kpis", "summary"],
-    queryFn: () => apiGet("/kpis/summary"),
+    queryKey: ["kpis", "summary", kpiParams],
+    queryFn: () => apiGet("/kpis/summary", kpiParams),
     staleTime: 30_000,
   });
 

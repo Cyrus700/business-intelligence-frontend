@@ -18,7 +18,7 @@ import {
 
 /** Enhanced RangePicker with custom date range support */
 export function RangePicker({ className }: { className?: string }) {
-  const { filters, setRange } = useFilters();
+  const { filters, setRange, setCustomRange } = useFilters();
   const [showCustom, setShowCustom] = useState(false);
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
@@ -45,7 +45,7 @@ export function RangePicker({ className }: { className?: string }) {
 
   const handleCustomApply = () => {
     if (customFrom && customTo) {
-      // setCustomRange(customFrom, customTo); // Not implemented in context yet
+      setCustomRange(customFrom, customTo);
       setShowCustom(false);
     }
   };

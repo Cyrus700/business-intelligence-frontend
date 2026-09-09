@@ -690,6 +690,11 @@ export type InspectResult = {
   validation: Record<string, { ready: boolean; missing: string[]; confidence: number }>;
   row_estimate: number;
   sheet_name: string | null;
+  business_summary?: string | null;
+  business_meta?: { label: string; business_label: string; plain: string; powers: string; example: string; icon: string } | null;
+  quality_hints?: string[];
+  intel?: { headline: string; body: string; suggested: string | null; meta?: unknown };
+  all_domain_meta?: Record<string, { label: string; business_label: string; plain: string; powers: string; example: string; icon: string }>;
 };
 
 export async function inspectFile(file: File): Promise<InspectResult> {

@@ -120,7 +120,10 @@ function DimensionFilters() {
 }
 
 export default function AnalyticsClient() {
-  const { data: kpiSummary } = useApi<KpiSummaryExtended>("/kpis/summary", undefined, ["kpis", "summary"]);
+  const { filters } = useFilters();
+  // Business-friendly: KPI cards now react to 7D/30D/90D/1Y just like every other panel
+  const kpiParams = apiParams(filters);
+  const { data: kpiSummary } = useApi<KpiSummaryExtended>("/kpis/summary", kpiParams);
 
   return (
     <>
