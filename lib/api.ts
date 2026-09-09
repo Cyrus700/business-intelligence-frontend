@@ -135,6 +135,8 @@ export const queryKeys = {
   diagnostics: { all: ["diagnostics"] as const, change: (p?: object) => ["diagnostics", "change", p] as const },
   rbac: { all: ["rbac"] as const, matrix: () => ["rbac", "matrix"] as const, me: () => ["rbac", "me"] as const, audit: (limit: number) => ["rbac", "audit", limit] as const },
   compare: { all: ["compare"] as const, meta: () => ["compare", "meta"] as const, result: (b: object) => ["compare", "result", b] as const },
+  projections: { all: ["projections"] as const, current: (p?: object) => ["projections", "current", p] as const },
+  scenario: { all: ["scenario"] as const, simulate: (p?: object) => ["scenario", "simulate", p] as const },
 };
 
 // ── Raw fetch helpers (used by useQuery + useMutation) ───────────
@@ -1625,4 +1627,50 @@ export async function postCompareAI(body: CompareRequestBody): Promise<{ ai: Com
 
 export async function getCompareMeta(): Promise<CompareMeta> {
   return apiGet<CompareMeta>("/analytics/compare/meta");
+}
+
+// ── Projections & Scenario (What-If) ─────────────────────────────────
+export type PeriodProjection = {
+  metric: string;
+  period: string;
+  period_key: string;
+  period_start: string;
+  period_end: string;
+  days_elapsed: number;
+  days_remaining: number;
+  actual_to_date: number;
+  projected_remainder: number;
+  projected_total: number;
+  lower_bound: number;
+  upper_bound: number;
+  daily_run_rate: number;
+  method: string;
+  confidence: number;
+  band_method: string;
+  daily_band: number;
+  coverage: boolean;
+  is_stale: boolean;
+  daily_cone: { date: string; weekday: number; projected: number; lower: number; upper: number; daily_value: number; coverage: boolean }[];
+};
+
+export type ScenarioResult = {
+  assumptions: Record<string, number>;
+  baseline: { revenue: number; orders: number; avg_order_value: number; expenses: number; profit: number };
+  scenario: { revenue: number; orders: number; avg_order_value: number; expenses: number; profit: number };
+  delta: { revenue: number; profit: number; revenue_pct: number | null; profit_pct: number | null };
+};
+
+export async function getCurrentProjection(params?: { metric?: string; period?: string }): Promise<PeriodProjection> {
+  return apiGet<PeriodProjection>("/ml/projections/current", params as QueryParams);
+}
+
+export async function simulateScenario(body: {
+  metric?: string;
+  period?: string;
+  orders_change_pct?: number;
+  aov_change_pct?: number;
+  expense_change_pct?: number;
+  variable_pct?: number;
+}): Promise<ScenarioResult> {
+  return apiPost<ScenarioResult>("/ml/scenario/simulate", body);
 }

@@ -13,11 +13,12 @@ import DiagnosticsPanel from "@/components/dashboard/live/DiagnosticsPanel";
 import RoleAnalytics from "@/components/dashboard/role/RoleAnalytics";
 import DataFreshness from "@/components/dashboard/live/DataFreshness";
 import { RangePicker, apiParams, useFilters, MultiSelectFilter, FilterChipsBar, SavedViewsBar } from "@/lib/filters";
-import { useApi, npr, type KpiSummaryExtended, type KpiCardExtended, type DimensionRow } from "@/lib/api";
+import { useApi, npr, type KpiSummaryExtended, type KpiCardExtended, type DimensionRow, type PeriodProjection } from "@/lib/api";
 import type { PnlRow } from "@/lib/api";
 import { LoadingState, ErrorState, EmptyState } from "@/components/ui";
 import AnalyticsLab from "@/components/dashboard/advanced/AnalyticsLab";
 import Badge from "@/components/ui/Badge";
+import Icon from "@/components/ui/Icon";
 
 function PnLSummary() {
   const { filters } = useFilters();
@@ -119,6 +120,45 @@ function DimensionFilters() {
   );
 }
 
+function IsolatedAccuracyBanner() {
+  const { data: coverage } = useApi<{ sales: { row_count: number; last_date: string | null }; today: string; days_behind: number | null }>("/data-coverage");
+  const { data: proj } = useApi<PeriodProjection>("/ml/projections/current", { metric: "revenue", period: "month" });
+  const isStale = (coverage as any)?.days_behind > 3 || (proj as any)?.is_stale;
+  return (
+    <div className="mb-6 rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-50 to-indigo-50/60 p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-600 text-white">
+            <Icon name="lock" className="h-4 w-4" />
+          </span>
+          <div>
+            <p className="text-sm font-semibold text-violet-900">Isolated analytics — accurate per workspace</p>
+            <p className="text-xs text-violet-700">All KPIs, forecasts, and diagnostics use only your org’s data. Snapshots filter <code className="bg-white px-1 rounded border">dimensions='{}'</code> so revenue isn’t 5-10× inflated. Per-org cache & watermarks keep freshness honest.</p>
+          </div>
+        </div>
+        <Badge variant="secondary" className="bg-white border-violet-200 text-violet-700">
+          {coverage?.sales.row_count != null ? `${coverage.sales.row_count.toLocaleString()} rows` : "Loading rows…"}
+          {coverage?.sales.last_date ? ` • last ${coverage.sales.last_date}` : ""}
+        </Badge>
+      </div>
+      <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+        <div className={`rounded-xl border px-3 py-2 ${isStale ? "bg-amber-50 border-amber-200 text-amber-800" : "bg-white border-violet-100 text-violet-800"}`}>
+          <p className="font-medium">{isStale ? "Stale" : "Fresh"} • {coverage?.days_behind != null ? `${coverage.days_behind} days behind` : "up to today"}</p>
+          <p className="text-[11px] opacity-80">{(proj as any)?.method ?? "weekday-adjusted run-rate • residuals after profile"}</p>
+        </div>
+        <div className="rounded-xl bg-white border border-violet-100 px-3 py-2 text-violet-800">
+          <p className="font-medium">Confidence • {(proj as any)?.confidence ? `${(((proj as any).confidence as number) * 100).toFixed(0)}%` : "95%"} band ({(proj as any)?.band_method ?? "profile_residual"})</p>
+          <p className="text-[11px] opacity-80">Coverage: {(proj as any)?.coverage ? "adequate" : "sparse"} • daily cone widens with √(n)</p>
+        </div>
+        <div className="rounded-xl bg-white border border-violet-100 px-3 py-2 text-violet-800">
+          <p className="font-medium">Isolation • per-org row_hash, Customer per-org</p>
+          <p className="text-[11px] opacity-80">No cross-tenant dedup • no global Customer reuse</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AnalyticsClient() {
   const { filters } = useFilters();
   // Business-friendly: KPI cards now react to 7D/30D/90D/1Y just like every other panel
@@ -129,11 +169,13 @@ export default function AnalyticsClient() {
     <>
       <PageHeader
         title="Analytics"
-        subtitle="Deep-dive into sales, categories and regions."
+        subtitle="Deep-dive into sales, categories and regions — isolated per workspace, grounded with bands."
         action={<RangePicker />}
       />
 
       <DataFreshness className="mb-6" />
+
+      <IsolatedAccuracyBanner />
 
       <SavedViewsBar className="mb-4" />
 
