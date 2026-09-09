@@ -20,25 +20,47 @@ const STATUS_BADGE: Record<string, string> = {
   validated: "bg-blue-100 text-blue-700",
   received: "bg-primary-50 text-primary",
   failed: "bg-warn-50 text-warn",
+  processing: "bg-blue-100 text-blue-700",
 };
 
 const PAGE_SIZE = 10;
 
 function StatusBadge({ status }: { status: string }) {
+  const normalized = status === "received" ? "received" : status;
+  // Detect background processing stored inside error_report
   return (
     <span
       className={clsx(
-        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize",
-        STATUS_BADGE[status] ?? "bg-border text-ink-soft",
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium capitalize",
+        STATUS_BADGE[normalized] ?? "bg-border text-ink-soft",
       )}
     >
-      {status}
+      {normalized === "received" && <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />}
+      {normalized}
     </span>
   );
 }
 
+function isProcessing(upload: UploadRecord): boolean {
+  const r = upload.error_report as unknown as Record<string, unknown> | null;
+  return upload.status === "received" && r?.status === "processing";
+}
+
 function ReportRow({ upload }: { upload: UploadRecord }) {
   const report = upload.error_report;
+  if (isProcessing(upload)) {
+    return (
+      <div className="px-4 py-3">
+        <div className="flex items-center gap-2 text-sm text-blue-700">
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600/30 border-t-blue-600" />
+          Processing — large file is being handled by Loader agent. Refresh in a few seconds.
+        </div>
+        {report && typeof (report as unknown as Record<string, unknown>).file_size === "number" && (
+          <p className="mt-2 text-xs text-ink-muted">Size: {formatBytes((report as unknown as Record<string, unknown>).file_size as number)}</p>
+        )}
+      </div>
+    );
+  }
   if (!report) {
     return <div className="px-4 py-3 text-sm text-ink-muted">No report available.</div>;
   }
@@ -271,7 +293,7 @@ function FragmentRow({
           {upload.row_count != null ? upload.row_count.toLocaleString() : "—"}
         </td>
         <td className="py-3 pr-3">
-          <StatusBadge status={upload.status} />
+          <StatusBadge status={isProcessing(upload) ? "processing" : upload.status} />
         </td>
         <td className="py-3 pr-3 text-ink-soft">{timeAgo(upload.created_at)}</td>
         <td className="py-3 pr-5 text-right">

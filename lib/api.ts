@@ -671,26 +671,218 @@ export type EtlJob = {
 
 // ── Data Integration API functions ──────────────────────────────────
 
+export type InspectResult = {
+  file_name: string;
+  kind: "csv" | "excel";
+  mime_hint: string;
+  encoding: string | null;
+  size_bytes: number;
+  columns: string[];
+  canonical_columns: string[];
+  preview: Array<Record<string, string>>;
+  warnings: string[];
+  detected: {
+    suggested: "sales" | "finance" | "inventory" | null;
+    confidence: number;
+    scores: Record<string, { matched: number; total: number; confidence: number; missing: string[]; has_all_required: boolean }>;
+    alternatives: Array<{ domain: string; confidence: number }>;
+  };
+  validation: Record<string, { ready: boolean; missing: string[]; confidence: number }>;
+  row_estimate: number;
+  sheet_name: string | null;
+};
+
+export async function inspectFile(file: File): Promise<InspectResult> {
+  const token = getToken();
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const form = new FormData();
+  form.append("file", file);
+  // 30s timeout for inspection (parsing only)
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30_000);
+  try {
+    const res = await fetch(`${BASE}/uploads/inspect`, { method: "POST", headers, body: form, signal: controller.signal });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ detail: res.statusText }));
+      const msg = String(body.detail ?? res.statusText);
+      throw new ApiError(res.status, friendlyMessage(res.status, msg));
+    }
+    return (await res.json()) as InspectResult;
+  } catch (e) {
+    if (e instanceof ApiError) throw e;
+    if (e instanceof DOMException && e.name === "AbortError") throw new ApiError(0, "Inspection timed out — file may be too large or corrupted.");
+    if (e instanceof TypeError && String((e as Error).message).includes("fetch")) {
+      throw new ApiError(0, "Cannot reach server — check your connection or try again.");
+    }
+    throw new ApiError(0, e instanceof Error ? e.message : "Inspection failed");
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export async function uploadFile(
   file: File,
   domain: string,
   dataSourceId?: string,
+  onProgress?: (pct: number) => void,
+  signal?: AbortSignal,
 ): Promise<UploadRecord> {
   const token = getToken();
   const headers: Record<string, string> = {};
   if (token) headers.Authorization = `Bearer ${token}`;
 
+  // Large file → chunked, professional & resilient
+  const CHUNKED_THRESHOLD = 5 * 1024 * 1024; // 5 MB
+  if (file.size > CHUNKED_THRESHOLD) {
+    return uploadFileChunked(file, domain, dataSourceId, onProgress, signal, headers);
+  }
+
   const form = new FormData();
   form.append("file", file);
-  form.append("domain", domain);
+  if (domain) form.append("domain", domain);
   if (dataSourceId) form.append("data_source_id", dataSourceId);
 
-  const res = await fetch(`${BASE}/uploads`, { method: "POST", headers, body: form });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new ApiError(res.status, String(body.detail ?? res.statusText));
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 120_000);
+  const combinedSignal = signal ? AbortSignal.any([signal, controller.signal]) : controller.signal;
+  try {
+    const res = await fetch(`${BASE}/uploads`, { method: "POST", headers, body: form, signal: combinedSignal });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ detail: res.statusText }));
+      const detail = String(body.detail ?? body.error ?? res.statusText);
+      throw new ApiError(res.status, friendlyMessage(res.status, detail));
+    }
+    const out = (await res.json()) as UploadRecord;
+    onProgress?.(100);
+    // If backend returned "processing" (large rows), poll until loaded/failed
+    if ((out.error_report as unknown as Record<string, unknown>)?.status === "processing") {
+      return pollUploadUntilDone(out.id, onProgress, signal);
+    }
+    return out;
+  } catch (e) {
+    if (e instanceof ApiError) throw e;
+    if (e instanceof DOMException && e.name === "AbortError") {
+      if (signal?.aborted) throw new ApiError(0, "Upload cancelled");
+      throw new ApiError(0, "Upload timed out — server is busy. Your file may still be processing; check history in a moment.");
+    }
+    if (e instanceof TypeError && String((e as Error).message).includes("fetch")) {
+      throw new ApiError(0, "Network error — cannot reach server. Check connection and retry. If this persists, the server may be temporarily unavailable.");
+    }
+    throw new ApiError(0, e instanceof Error ? e.message : "Upload failed");
+  } finally {
+    clearTimeout(timeout);
   }
-  return res.json() as Promise<UploadRecord>;
+}
+
+async function uploadFileChunked(
+  file: File,
+  domain: string,
+  dataSourceId: string | undefined,
+  onProgress: ((pct: number) => void) | undefined,
+  outerSignal: AbortSignal | undefined,
+  headers: Record<string, string>,
+): Promise<UploadRecord> {
+  const CHUNK_SIZE = 1 * 1024 * 1024; // 1 MB
+  const totalChunks = Math.max(1, Math.ceil(file.size / CHUNK_SIZE));
+
+  // 1. Init session
+  const initForm = new FormData();
+  initForm.append("file_name", file.name);
+  initForm.append("total_size", String(file.size));
+  initForm.append("total_chunks", String(totalChunks));
+  if (domain) initForm.append("domain", domain);
+  const initRes = await fetch(`${BASE}/uploads/chunked/init`, { method: "POST", headers, body: initForm, signal: outerSignal });
+  if (!initRes.ok) {
+    const body = await initRes.json().catch(() => ({ detail: initRes.statusText }));
+    throw new ApiError(initRes.status, friendlyMessage(initRes.status, String(body.detail ?? initRes.statusText)));
+  }
+  const { session_id } = (await initRes.json()) as { session_id: string };
+
+  // 2. Stream chunks sequentially (keep it simple & retry per chunk)
+  for (let i = 0; i < totalChunks; i++) {
+    if (outerSignal?.aborted) throw new ApiError(0, "Upload cancelled");
+    const start = i * CHUNK_SIZE;
+    const end = Math.min(start + CHUNK_SIZE, file.size);
+    const chunkBlob = file.slice(start, end);
+    let attempts = 0;
+    while (true) {
+      try {
+        const form = new FormData();
+        form.append("chunk_index", String(i));
+        form.append("chunk", chunkBlob, `chunk-${i}`);
+        const res = await fetch(`${BASE}/uploads/chunked/${session_id}/chunk`, {
+          method: "POST",
+          headers,
+          body: form,
+          signal: outerSignal,
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({ detail: res.statusText }));
+          throw new ApiError(res.status, String(body.detail ?? res.statusText));
+        }
+        break;
+      } catch (e) {
+        attempts++;
+        if (attempts >= 3) throw e;
+        await new Promise((r) => setTimeout(r, 800 * attempts));
+      }
+    }
+    onProgress?.(Math.round(((i + 1) / totalChunks) * 90)); // 0-90 for upload phase
+  }
+
+  // 3. Complete & process
+  const completeForm = new FormData();
+  if (domain) completeForm.append("domain", domain);
+  if (dataSourceId) completeForm.append("data_source_id", dataSourceId);
+  const compRes = await fetch(`${BASE}/uploads/chunked/${session_id}/complete`, {
+    method: "POST",
+    headers,
+    body: completeForm,
+    signal: outerSignal,
+  });
+  if (!compRes.ok) {
+    const body = await compRes.json().catch(() => ({ detail: compRes.statusText }));
+    throw new ApiError(compRes.status, friendlyMessage(compRes.status, String(body.detail ?? compRes.statusText)));
+  }
+  const out = (await compRes.json()) as UploadRecord;
+  onProgress?.(95);
+  if ((out.error_report as unknown as Record<string, unknown>)?.status === "processing") {
+    const final = await pollUploadUntilDone(out.id, onProgress, outerSignal);
+    onProgress?.(100);
+    return final;
+  }
+  onProgress?.(100);
+  return out;
+}
+
+async function pollUploadUntilDone(id: string, onProgress?: (pct: number) => void, signal?: AbortSignal): Promise<UploadRecord> {
+  // Poll every 1.5s up to 90s (background pipeline for large files finishes quickly)
+  for (let i = 0; i < 60; i++) {
+    if (signal?.aborted) throw new ApiError(0, "Upload cancelled");
+    await new Promise((r) => setTimeout(r, 1500));
+    try {
+      const rec = await apiGet<UploadRecord>(`/uploads/${id}`);
+      const status = rec.status;
+      if (status === "loaded" || status === "failed") {
+        if (status === "failed") {
+          const msg = rec.error_report?.error || "Processing failed";
+          throw new ApiError(422, msg);
+        }
+        return rec;
+      }
+      // still processing: nudge progress 95-99
+      onProgress?.(95 + Math.min(4, Math.floor(i / 3)));
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 422) throw e;
+      // ignore transient poll errors
+    }
+  }
+  throw new ApiError(0, "Processing is taking longer than expected — check history shortly. Your file was accepted.");
+}
+
+export async function getUpload(id: string): Promise<UploadRecord> {
+  return apiGet<UploadRecord>(`/uploads/${id}`);
 }
 
 export async function getUploads(params?: {
