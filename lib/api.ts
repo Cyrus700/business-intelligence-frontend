@@ -118,7 +118,15 @@ export const queryKeys = {
   recommendations: { all: ["recommendations"] as const, list: () => ["recommendations", "list"] as const, history: () => ["recommendations", "history"] as const },
   dataSources: { all: ["data-sources"] as const, list: () => ["data-sources", "list"] as const },
   etlJobs: { all: ["etl-jobs"] as const, list: () => ["etl-jobs", "list"] as const },
-  uploads: { all: ["uploads"] as const, list: (page: number) => ["uploads", "list", page] as const },
+  uploads: {
+    all: ["uploads"] as const,
+    // TimestampAgent + cache fix: include page_size/status so 1-row stats and 10-row history don't collide
+    list: (params: number | { page: number; page_size?: number; status?: string }) => {
+      const obj = typeof params === "number" ? { page: params } : params;
+      return ["uploads", "list", normalizeParams(obj as unknown as Record<string, string | number | boolean | undefined>)] as const;
+    },
+    detail: (id: string) => ["uploads", "detail", id] as const,
+  },
   alerts: { all: ["alerts"] as const, rules: (p?: object) => ["alerts", "rules", p] as const },
   notifications: { all: ["notifications"] as const, list: (p?: object) => ["notifications", "list", p] as const },
   users: { all: ["users"] as const, list: () => ["users", "list"] as const, detail: (id: string) => ["users", "detail", id] as const },
@@ -646,6 +654,7 @@ export type UploadRecord = {
   row_count: number | null;
   error_report: UploadReport | null;
   created_at: string;
+  updated_at?: string | null;
   etl_job_id: string | null;
 };
 

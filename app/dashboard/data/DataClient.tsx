@@ -39,7 +39,7 @@ function StatCard({
 
 function StatsStrip() {
   const uploads = useQuery({
-    queryKey: queryKeys.uploads.list(1),
+    queryKey: queryKeys.uploads.list({ page: 1, page_size: 1 }),
     queryFn: () => getUploads({ page: 1, page_size: 1 }),
     staleTime: 30_000,
   });

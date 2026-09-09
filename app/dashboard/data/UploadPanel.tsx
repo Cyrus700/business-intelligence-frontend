@@ -76,19 +76,40 @@ function agentStepsFor(progress: number, uploading: boolean, error: string | nul
 }
 
 function SampleStrip() {
+  const downloadSample = async (domain: string) => {
+    try {
+      const { getToken } = await import("@/lib/auth");
+      const token = getToken();
+      const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+      const url = `${base.replace(/\/$/, "")}/uploads/samples/${domain}?format=xlsx`;
+      const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+      if (!res.ok) throw new Error("Download failed");
+      const blob = await res.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `sample_${domain}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    } catch {
+      // Fallback: try public folder (if backend not reachable) — keeps business flow unblocked
+      window.location.href = `/samples/${domain}-sample.xlsx`;
+    }
+  };
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-bg-soft/40 px-3.5 py-2.5">
       <span className="text-xs font-semibold text-ink-muted">Need a template? Download a ready-to-upload sample:</span>
       {DOMAINS.map((d) => (
-        <a
+        <button
           key={d.value}
-          href={`/samples/${d.value}-sample.xlsx`}
-          download
+          type="button"
+          onClick={() => downloadSample(d.value)}
           className="inline-flex items-center gap-1.5 rounded-lg border border-primary/25 bg-primary-50/60 px-2.5 py-1.5 text-xs font-medium text-primary hover:bg-primary-50 hover:ring-2 hover:ring-primary/20"
         >
           <Icon name="download" className="h-3.5 w-3.5" />
           {d.label} .xlsx
-        </a>
+        </button>
       ))}
       <span className="ml-auto hidden text-[11px] text-ink-muted sm:block">Pick the matching domain below, then upload — no edits needed.</span>
     </div>
@@ -397,6 +418,19 @@ export default function UploadPanel({ canManage }: { canManage: boolean }) {
     setResult(null);
     const controller = new AbortController();
     abortRef.current = controller;
+    const broadInvalidate = () => {
+      // TimestampAgent + HistoryAgent: always refresh history even on 422 failure (failed row is persisted)
+      queryClient.invalidateQueries({ queryKey: queryKeys.uploads.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.etlJobs.all });
+      // Business value: new data should flow to KPIs/forecasts without waiting 5m staleTime
+      queryClient.invalidateQueries({ queryKey: queryKeys.kpis.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.sales.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.finance.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.inventory.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.coverage.all });
+      // Nudge UploadHistory back to page 1 so the just-uploaded file (ORDER BY created_at DESC) is visible
+      window.dispatchEvent(new CustomEvent("insightflow:uploads:created"));
+    };
     try {
       const res = await uploadFile(file, domain, undefined, (pct) => setProgress(pct), controller.signal);
       setProgress(100);
@@ -404,8 +438,7 @@ export default function UploadPanel({ canManage }: { canManage: boolean }) {
       setFile(null);
       setInspect(null);
       setClientError(null);
-      queryClient.invalidateQueries({ queryKey: queryKeys.uploads.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.etlJobs.all });
+      broadInvalidate();
       // slight delay to let user see 100%
       setTimeout(() => setProgress(0), 600);
     } catch (err) {
@@ -421,6 +454,8 @@ export default function UploadPanel({ canManage }: { canManage: boolean }) {
       }
       setServerError(friendly);
       setProgress(0);
+      // Even on 422 the RawUpload row exists as failed — show it in history
+      broadInvalidate();
     } finally {
       setUploading(false);
       abortRef.current = null;
